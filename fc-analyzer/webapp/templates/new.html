@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% set active = 'new' %}
+{% block title %}提 FC 工单 · FC 可行性分析（灯光）{% endblock %}
+
+{% block content %}
+<section class="hero" style="padding-bottom:16px;margin-bottom:12px">
+  <span class="text-eyebrow">New FC</span>
+  <h2>提 FC 工单</h2>
+  <p class="hero-sub">填写问题描述，AI 将自动提取字段并生成 VIIM 工单草稿。</p>
+</section>
+
+<div class="page-cols">
+<div class="card">
+  <div class="card-body">
+    <form id="new-fc-form" hx-post="/api/draft" hx-target="#draft-result" hx-swap="innerHTML">
+      <div class="form-group">
+        <label class="form-label" for="description">问题描述 <span style="color:var(--system-red)">*</span></label>
+        <textarea class="form-input" id="description" name="description" rows="5" placeholder="详细描述 FC 问题的现象、位置、影响…" required></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group form-group--half">
+          <label class="form-label" for="area">所属区域</label>
+          <select class="form-input" id="area" name="area">
+            <option value="">自动识别</option>
+            <option value="EXT-Front End">前灯 / 前雾灯 / 日行灯</option>
+            <option value="EXT-Rear End">尾灯 / 刹车灯 / 牌照灯</option>
+            <option value="EXT-Side&Roof&Door">侧转向灯 / 翼子板灯</option>
+            <option value="INT-Roof&Pillar">阅读灯 / 天窗灯</option>
+            <option value="INT-IP&SW">仪表灯</option>
+            <option value="INT-Door Trim">氛围灯 / 门板灯</option>
+            <option value="INT-Console">杯托灯 / 中控灯</option>
+            <option value="INT-Luggage Compartment">行李厢灯</option>
+          </select>
+        </div>
+        <div class="form-group form-group--half">
+          <label class="form-label" for="severity">严重程度</label>
+          <select class="form-input" id="severity" name="severity">
+            <option value="">自动识别</option>
+            <option value="S-非常重要（安全/法规/抛锚）">S-非常重要（安全/法规/抛锚）</option>
+            <option value="A-重要">A-重要</option>
+            <option value="B-一般重要">B-一般重要</option>
+            <option value="C-一般">C-一般</option>
+            <option value="D-不重要">D-不重要</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group form-group--half">
+          <label class="form-label" for="car_model">车型</label>
+          <input class="form-input" id="car_model" name="car_model" list="new-car-list" placeholder="自动识别，可输入或选择">
+          <datalist id="new-car-list">
+            <option value="车型F-25C"></option>
+            <option value="车型C-L"></option>
+            <option value="车型C-U-26D-赛道版"></option>
+            <option value="车型C-U-26D-市场版"></option>
+            <option value="车型C-车型I-EU"></option>
+            <option value="车型C-车型J"></option>
+            <option value="车型C-车型H"></option>
+            <option value="车型C-车型H-RHD"></option>
+          </datalist>
+        </div>
+        <div class="form-group form-group--half">
+          <label class="form-label" for="project">项目</label>
+          <input class="form-input" id="project" name="project" list="new-project-list" placeholder="自动识别，可输入或选择">
+          <datalist id="new-project-list">
+            <option value="DEMODIR">车型C-DIR</option>
+          </datalist>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="images">附件图片（可选）</label>
+        <input type="file" class="form-input" id="images" name="images" accept="image/*" multiple>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-gradient" onclick="goReview()">
+          <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.7.7 1 1.6 1 2.6v.7h6v-.7c0-1 .3-1.9 1-2.6A7 7 0 0 0 12 2z"/></svg>
+          智能核对 →
+        </button>
+        <button type="submit" class="btn-secondary">
+          <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          生成草稿
+        </button>
+        <a href="/history" class="btn-secondary">
+          <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          工作台
+        </a>
+      </div>
+    </form>
+
+    <div id="draft-result" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- 侧栏：流程指引 -->
+<div class="stack">
+  <div class="card">
+    <div class="card-header"><h3>建单流程</h3></div>
+    <div class="card-body">
+      <div class="steps">
+        <div class="step"><span class="step__num">1</span><div><div class="step__title">描述问题</div><div class="step__desc">尽量写清现象、位置、触发条件与影响范围。</div></div></div>
+        <div class="step"><span class="step__num">2</span><div><div class="step__title">AI 抽取字段</div><div class="step__desc">自动识别区域、严重度、零件、法规等 24 项字段。</div></div></div>
+        <div class="step"><span class="step__num">3</span><div><div class="step__title">核对草稿</div><div class="step__desc">预览生成的 VIIM 工单草稿，可手动修正。</div></div></div>
+        <div class="step"><span class="step__num">4</span><div><div class="step__title">提交 VIIM</div><div class="step__desc">确认后一键建单，进度可在提醒页跟踪。</div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>小贴士</h3></div>
+    <div class="card-body">
+      <ul class="tips">
+        <li>带上触发条件（如"洗车后""高温时"）能显著提高抽取准确率。</li>
+        <li>附一张现场图片，便于工单处理人快速定位。</li>
+        <li>拿不准严重度就选"自动识别"，AI 会按规则判级。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function goReview() {
+  var desc = document.getElementById('description').value.trim();
+  if (!desc) { alert('请先填写问题描述'); return; }
+  var f = document.createElement('form');
+  f.method = 'post'; f.action = '/review';
+  function addHidden(name, val) {
+    var i = document.createElement('input');
+    i.type = 'hidden'; i.name = name; i.value = val;
+    f.appendChild(i);
+  }
+  addHidden('description', desc);
+  addHidden('car_model', document.getElementById('car_model').value);
+  addHidden('project', document.getElementById('project').value);
+  addHidden('severity', document.getElementById('severity').value);
+  addHidden('area', document.getElementById('area').value);
+  document.body.appendChild(f);
+  f.submit();
+}
+</script>
+{% endblock %}

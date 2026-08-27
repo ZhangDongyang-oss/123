@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% set active = 'feedback' %}
+{% block title %}反馈学习 · FC 可行性分析（灯光）{% endblock %}
+
+{% block content %}
+<section class="hero" style="padding-bottom:16px;margin-bottom:12px">
+  <span class="text-eyebrow">Feedback</span>
+  <h2>反馈学习</h2>
+  <p class="hero-sub">当系统抽取不准确时，提交纠正反馈。积累 ≥3 条后可批量学习，自动更新关键词库。</p>
+</section>
+
+<div class="stat-grid" id="fb-stats" style="margin-bottom:12px"></div>
+
+<div class="page-cols">
+<div class="card">
+  <div class="card-body">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">📝 提交反馈</h3>
+    <div class="form-group">
+      <label class="form-label" for="fb-text">FC 描述</label>
+      <input type="text" class="form-input" id="fb-text" placeholder="前灯起雾">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:10px">
+      <div class="form-group">
+        <label class="form-label" for="fb-area">纠正区域</label>
+        <select class="form-input" id="fb-area">
+          <option value="">（不纠正）</option>
+          <option value="EXT-Front End">EXT-Front End</option>
+          <option value="EXT-Rear End">EXT-Rear End</option>
+          <option value="EXT-Side&Roof&Door">EXT-Side&Roof&Door</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fb-severity">纠正严重度</label>
+        <select class="form-input" id="fb-severity">
+          <option value="">（不纠正）</option>
+          <option value="S">S - 严重</option>
+          <option value="A">A - 高</option>
+          <option value="B">B - 中</option>
+          <option value="C">C - 低</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fb-viim">VIIM 工单号</label>
+        <input type="text" class="form-input" id="fb-viim" placeholder="DIR-xxxx（可选）">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn-success" onclick="doFeedback()">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        提交反馈
+      </button>
+      <button class="btn-accent" onclick="doLearn()">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        批量学习
+      </button>
+      <button class="btn-ghost" onclick="doLearnDryrun()">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M22 12c-2.67 4.67-6 7-10 7s-7.33-2.33-10-7c2.67-4.67 6-7 10-7s7.33 2.33 10 7z"/></svg>
+        预览学习
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">📊 各字段准确率</h3>
+    <div id="field-accuracy"></div>
+    <h3 style="font-size:15px;font-weight:600;margin:16px 0 12px">❌ 高频错误</h3>
+    <div id="top-errors"></div>
+  </div>
+</div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="card-body">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">🗂️ 我提交的学习案例 <span class="muted" style="font-size:12px;font-weight:400">（反馈学习写入案例库的条目，可删除）</span></h3>
+    <div id="learned-cases"></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="card-body">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">🔑 我学习入库的关键词 <span class="muted" style="font-size:12px;font-weight:400">（反馈学习写进关键词库的词，可删除）</span></h3>
+    <div id="learned-keywords"></div>
+  </div>
+</div>
+
+<div id="fb-result" style="margin-top:16px"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadStats() {
+  var resp = await fetch('/api/stats', {method: 'POST'});
+  var data = await resp.json();
+
+  var statsHtml = '';
+  var items = [
+    { label: '总体准确率', value: data.overall_accuracy + '%', color: data.overall_accuracy > 80 ? 'var(--system-green)' : 'var(--system-red)' },
+    { label: '近期准确率', value: data.recent_accuracy + '%', color: data.recent_accuracy > 80 ? 'var(--system-green)' : 'var(--system-orange)' },
+    { label: '反馈总数', value: data.total_feedbacks, color: 'var(--system-blue)' },
+    { label: '学习次数', value: data.learning_runs, color: 'var(--system-purple)' }
+  ];
+  items.forEach(function(item) {
+    statsHtml += '<div class="stat-card">';
+    statsHtml += '<div style="font-size:28px;font-weight:700;font-family:ui-monospace,monospace;color:' + item.color + '">' + item.value + '</div>';
+    statsHtml += '<div class="muted" style="font-size:12px;margin-top:6px">' + item.label + '</div>';
+    statsHtml += '</div>';
+  });
+  document.getElementById('fb-stats').innerHTML = statsHtml;
+
+  var accHtml = '<table class="data-table"><thead><tr><th>字段</th><th>准确率</th><th>正确</th><th>错误</th></tr></thead><tbody>';
+  for (var field in (data.field_accuracy || {})) {
+    var a = data.field_accuracy[field];
+    accHtml += '<tr><td>' + field + '</td><td>' + a.accuracy + '%</td><td>' + a.correct + '</td><td>' + a.wrong + '</td></tr>';
+  }
+  accHtml += '</tbody></table>';
+  document.getElementById('field-accuracy').innerHTML = accHtml;
+
+  var errHtml = '<table class="data-table"><thead><tr><th>错误模式</th><th>次数</th></tr></thead><tbody>';
+  (data.top_errors || []).forEach(function(pair) {
+    errHtml += '<tr><td>' + pair[0] + '</td><td>' + pair[1] + '</td></tr>';
+  });
+  errHtml += '</tbody></table>';
+  document.getElementById('top-errors').innerHTML = errHtml;
+}
+
+async function doFeedback() {
+  var text = document.getElementById('fb-text').value.trim();
+  if (!text) { alert('请输入 FC 描述'); return; }
+  var corrections = {};
+  var area = document.getElementById('fb-area').value;
+  var sev = document.getElementById('fb-severity').value;
+  var viim = document.getElementById('fb-viim').value.trim();
+  if (area) corrections.area = area;
+  if (sev) corrections.severity = sev;
+  if (viim) corrections.viim_key = viim;
+  if (Object.keys(corrections).length === 0) { alert('请至少填写一项纠正'); return; }
+
+  var resp = await fetch('/api/feedback', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({query: text, corrections: corrections})
+  });
+  var data = await resp.json();
+
+  var wrapper = document.createElement('div');
+  wrapper.className = 'card';
+  wrapper.style.marginTop = '16px';
+  var body = document.createElement('div');
+  body.className = 'card-body';
+  body.style.cssText = 'display:flex;gap:10px;align-items:flex-start';
+  body.innerHTML = '<svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--system-green)" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
+  var info = document.createElement('div');
+  var strong = document.createElement('strong');
+  strong.textContent = '反馈已收集: ' + (data.feedback_id || '');
+  var br = document.createElement('br');
+  var muted = document.createElement('span');
+  muted.className = 'muted';
+  muted.textContent = '差异字段: ' + (data.diffs && data.diffs.length > 0 ? data.diffs.join(', ') : '✨ 无差异');
+  info.appendChild(strong);
+  info.appendChild(br);
+  info.appendChild(muted);
+  body.appendChild(info);
+  wrapper.appendChild(body);
+  var el = document.getElementById('fb-result');
+  el.innerHTML = '';
+  el.appendChild(wrapper);
+  loadStats();
+}
+
+async function doLearn() {
+  var resp = await fetch('/api/learn', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({min_feedbacks: 3, dry_run: false})
+  });
+  var data = await resp.json();
+  var el = document.getElementById('fb-result');
+  var card = document.createElement('div');
+  card.className = 'card';
+  card.style.marginTop = '16px';
+  var cardBody = document.createElement('div');
+  cardBody.className = 'card-body';
+  var pre = document.createElement('pre');
+  pre.style.cssText = 'font-size:13px;white-space:pre-wrap;word-break:break-word';
+  pre.textContent = JSON.stringify(data, null, 2);
+  cardBody.appendChild(pre);
+  card.appendChild(cardBody);
+  el.innerHTML = '';
+  el.appendChild(card);
+  loadStats();
+}
+
+async function doLearnDryrun() {
+  var resp = await fetch('/api/learn', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({min_feedbacks: 3, dry_run: true})
+  });
+  var data = await resp.json();
+  var el = document.getElementById('fb-result');
+  var card = document.createElement('div');
+  card.className = 'card';
+  card.style.marginTop = '16px';
+  var cardBody = document.createElement('div');
+  cardBody.className = 'card-body';
+  var pre = document.createElement('pre');
+  pre.style.cssText = 'font-size:13px;white-space:pre-wrap;word-break:break-word';
+  pre.textContent = JSON.stringify(data, null, 2);
+  cardBody.appendChild(pre);
+  card.appendChild(cardBody);
+  el.innerHTML = '';
+  el.appendChild(card);
+}
+
+async function loadLearnedKeywords() {
+  var el = document.getElementById('learned-keywords');
+  try {
+    var resp = await fetch('/api/feedback/keywords');
+    var data = await resp.json();
+    var items = data.keywords || [];
+    if (!items.length) {
+      el.innerHTML = '<p class="muted" style="font-size:13px">暂无学习关键词。区域/严重度纠正积累到门槛后「批量学习」会把症状词写进关键词库，并登记在这里。</p>';
+      return;
+    }
+    var html = '<table class="data-table"><thead><tr><th>类型</th><th>分组</th><th>关键词</th><th>加入时间</th><th></th></tr></thead><tbody>';
+    items.forEach(function(it) {
+      html += '<tr>'
+        + '<td>' + (it.kind === 'areas' ? '区域' : '严重度') + '</td>'
+        + '<td>' + escapeHtml(String(it.group)) + '</td>'
+        + '<td>' + escapeHtml(String(it.word)) + '</td>'
+        + '<td class="muted" style="font-size:12px">' + escapeHtml(String(it.added || '').slice(0, 10)) + '</td>'
+        + '<td><button type="button" class="btn-danger-ghost btn-sm" data-k="' + escapeHtml(String(it.kind)) + '" data-g="' + escapeHtml(String(it.group)) + '" data-w="' + escapeHtml(String(it.word)) + '" onclick="delLearnedKeyword(this)">删除</button></td>'
+        + '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = '<p class="muted" style="font-size:13px">学习关键词加载失败</p>';
+  }
+}
+
+async function delLearnedKeyword(btn) {
+  var kind = btn.dataset.k, group = btn.dataset.g, word = btn.dataset.w;
+  if (!confirm('删除学习关键词「' + word + '」？\n删除后关键词库同步移除，抽取不再命中该词。')) return;
+  btn.disabled = true;
+  try {
+    var resp = await fetch('/api/feedback/keywords/delete', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({kind: kind, group: group, word: word})
+    });
+    var d = await resp.json();
+    if (d.ok) {
+      loadLearnedKeywords();
+    } else {
+      alert('删除失败：' + (d.error || ''));
+      btn.disabled = false;
+    }
+  } catch (e) {
+    alert('网络错误');
+    btn.disabled = false;
+  }
+}
+
+loadStats();
+loadLearnedCases();
+loadLearnedKeywords();
+</script>
+{% endblock %}

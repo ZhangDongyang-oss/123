@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% set active = 'submissions' %}
+{% block title %}提交历史 · FC 可行性分析（灯光）{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <span class="text-eyebrow">History</span>
+  <h2>提交历史</h2>
+  <p class="hero-sub">查看所有已提交的 FC 工单记录。</p>
+</section>
+
+<div class="card" style="overflow:hidden">
+  <div class="card-body" style="padding:0">
+    <div id="submissions-table" hx-get="/api/submissions/list" hx-trigger="load" hx-swap="innerHTML">
+      <div style="padding:32px;text-align:center">
+        <p class="muted">加载中…</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

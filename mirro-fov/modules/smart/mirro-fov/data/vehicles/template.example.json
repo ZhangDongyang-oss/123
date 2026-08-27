@@ -1,0 +1,44 @@
+{
+  "vehicle": { "name": "Template" },
+  "mirror": {
+    "width": 0.224,
+    "height": 0.050,
+        "pivot": [2.883, 0.0, 1.441],
+    "center_zero": [2.909, 0.0, 1.442],
+    "arm_offset": [0.026, 0.0, 0.001],
+    "yaw": -23.5,
+    "pitch": 5.0,
+    "outline_path": "template.outline.json"
+  },
+  "driver": {
+    "eye_center": [3.243, -0.385, 1.372],
+    "interpupillary_distance": 0.065
+  },
+  "ground": {
+    "front_mid": [0.5, 0.0, 0.193],
+    "rear_mid": [5.9, 0.0, 0.185]
+  },
+  "rear_window": {
+    "outline": [
+      [4.54, -0.57, 1.49],
+      [4.71, -0.51, 1.45],
+      [4.71, 0.51, 1.45],
+      [4.54, 0.57, 1.49]
+    ],
+    "transparent_zone": []
+  },
+  "regulation": {
+    "standard": "GB 15084",
+    "mirror_class": "I",
+    "far_distance": 60.0,
+    "required_width_at_far": 20.0
+  },
+  "tolerance": {
+    "coverage_y": 0.5,
+    "ground_visible_z": 1.0,
+    "pitch_convergence": 0.1
+  },
+  "visualization": {
+    "ground_plane_z": 0.193
+  }
+}

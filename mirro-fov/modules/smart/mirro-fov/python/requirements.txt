@@ -1,0 +1,5 @@
+# 3DE 读取所需 Python 依赖 (本机安装, 不上平台)
+# pip install -r python/requirements.txt
+pywin32
+numpy
+pyyaml

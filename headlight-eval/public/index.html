@@ -1,0 +1,3186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>前照灯主观评价系统 · AI Edition</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='g1' cx='50%25' cy='45%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23fff9c4'/%3E%3Cstop offset='40%25' stop-color='%23ffeb3b'/%3E%3Cstop offset='100%25' stop-color='%23f57f17'/%3E%3C/radialGradient%3E%3ClinearGradient id='b1' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0%25' stop-color='%23455a64'/%3E%3Cstop offset='100%25' stop-color='%23263238'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='8' y='10' width='48' height='44' rx='14' fill='url(%23b1)' stroke='%2337474f' stroke-width='2'/%3E%3Cellipse cx='32' cy='32' rx='16' ry='14' fill='url(%23g1)'/%3E%3Cellipse cx='32' cy='30' rx='8' ry='6' fill='%23fff' opacity='0.5'/%3E%3C/svg%3E">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+
+:root {
+  --pri: #FF6700;
+  --pri2: #FF8533;
+  --pri3: #FFB380;
+  --bg: #0A0A0C;
+  --bg2: #121215;
+  --bg3: #1A1A1F;
+  --card: #161619;
+  --card2: #1E1E22;
+  --glass: rgba(22,22,25,.88);
+  --glass2: rgba(22,22,25,.65);
+  --txt: #E8E4DF;
+  --txt2: #B0AAA2;
+  --txt3: #7A756E;
+  --bdr: #2A2A30;
+  --bdr2: #222228;
+  --ok: #22C55E;
+  --warn: #F59E0B;
+  --bad: #EF4444;
+  --cyan: #FF6700;
+  --amber: #FF6700;
+  --amber2: #FFB380;
+  --r: 12px;
+  --shadow: 0 2px 12px rgba(0,0,0,.25), 0 8px 32px rgba(0,0,0,.18);
+  --shadow2: 0 4px 24px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.2);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Guide Page ── */
+.guide-page {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  overflow: hidden;
+  transition: opacity .6s ease, transform .6s ease;
+}
+
+.guide-page::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255,103,0,.18) 0%, transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(139,92,246,.12) 0%, transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(255,179,0,.10) 0%, transparent 40%);
+  animation: guideBgDrift 20s ease-in-out infinite alternate;
+  z-index: 0;
+}
+
+@keyframes guideBgDrift {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-5%, 3%) scale(1.1); }
+}
+
+.guide-page .guide-video-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,.2) 0%, rgba(0,0,0,.6) 100%);
+  z-index: 1;
+}
+
+.guide-page .guide-video-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  opacity: .55;
+}
+
+.guide-page.hidden {
+  opacity: 0;
+  transform: scale(1.02);
+  pointer-events: none;
+}
+
+.guide-content {
+  position: relative;
+  z-index: 3;
+  text-align: center;
+  padding: 24px;
+  max-width: 680px;
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+
+
+@keyframes ringPulse {
+  0% { transform: scale(.85); opacity: .6; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+.guide-title {
+  font-size: clamp(32px, 6vw, 48px);
+  font-weight: 900;
+  letter-spacing: 6px;
+  line-height: 1.2;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #3A2A22 20%, var(--pri) 60%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.guide-subtitle {
+  font-size: 15px;
+  color: var(--txt2);
+  letter-spacing: 2px;
+  margin-bottom: 48px;
+  font-weight: 500;
+}
+
+.guide-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 52px;
+}
+
+@media (max-width: 600px) {
+  .guide-features { grid-template-columns: 1fr; gap: 12px; }
+}
+
+.guide-feat {
+  background: var(--guide-card);
+  border: 1px solid var(--bdr);
+  border-radius: 18px;
+  padding: 30px 20px;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  transition: all .3s;
+  box-shadow: 0 8px 32px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.guide-feat:hover {
+  border-color: rgba(255,103,0,.35);
+  background: var(--guide-card-hover);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(255,103,0,.12), inset 0 1px 0 rgba(255,255,255,.12);
+}
+
+.guide-feat .gf-icon {
+  font-size: 28px;
+  margin-bottom: 14px;
+  display: block;
+  color: var(--pri);
+  filter: drop-shadow(0 2px 4px rgba(255,103,0,.3));
+}
+
+.guide-feat .gf-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+  margin-bottom: 8px;
+  letter-spacing: .3px;
+}
+
+.guide-feat .gf-desc {
+  font-size: 11px;
+  color: var(--txt2);
+  line-height: 1.6;
+}
+
+.guide-enter {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 44px;
+  background: linear-gradient(135deg, rgba(255,103,0,.9), rgba(139,92,246,.9));
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all .3s;
+  box-shadow: 0 8px 32px rgba(255,103,0,.35), inset 0 1px 0 rgba(255,255,255,.2);
+  font-family: 'Inter', sans-serif;
+}
+
+.guide-enter:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 48px rgba(255,103,0,.45), inset 0 1px 0 rgba(255,255,255,.25);
+  border-color: rgba(255,255,255,.3);
+}
+
+.guide-enter svg {
+  transition: transform .3s;
+}
+
+.guide-enter:hover svg {
+  transform: translateX(4px);
+}
+
+/* ── Main App ── */
+.app-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px 80px;
+  opacity: 0;
+  transition: opacity .5s ease .3s;
+}
+
+.app-wrap.visible { opacity: 1; }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 15% 50%, rgba(255,103,0,.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 15%, rgba(255,179,0,.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 95%, rgba(255,103,0,.03) 0%, transparent 50%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Back Button ── */
+.back-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(255,103,0,.2);
+  border: 1px solid rgba(255,131,51,.25);
+  border-radius: 12px;
+  color: var(--pri);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .3s;
+  backdrop-filter: blur(12px);
+  font-family: Inter, PingFang SC, sans-serif;
+  letter-spacing: .3px;
+  opacity: 0;
+  transform: translateX(-10px);
+}
+.app-wrap.visible .back-btn {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity .5s ease .5s, transform .5s ease .5s, background .3s, border-color .3s;
+}
+.back-btn:hover {
+  background: rgba(255,103,0,.35);
+  border-color: var(--pri);
+}
+.back-btn svg { transition: transform .3s; }
+.back-btn:hover svg { transform: translateX(-3px); }
+/* Batch Item Info Fields */
+.batch-info-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.batch-info-row label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--txt3);
+  min-width: 56px;
+  letter-spacing: .3px;
+}
+
+.batch-info-row .inp {
+  padding: 9px 14px;
+  font-size: 13px;
+  min-width: 140px;
+  border-radius: 10px;
+}
+
+.batch-info-row select.inp {
+  min-width: 120px;
+  flex: 0 0 140px;
+}
+
+/* Hero */
+.hero {
+  padding: 48px 24px 40px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-beam {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 170px;
+  pointer-events: none;
+  opacity: .5;
+  z-index: 0;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  background: rgba(255,255,255,.05);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 24px;
+  padding: 40px 50px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.1);
+}
+
+.hero h1 {
+  font-size: clamp(24px, 5vw, 34px);
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--txt) 30%, var(--pri) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 5px;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.hero p {
+  font-size: 13px;
+  color: var(--txt2);
+  letter-spacing: 1.5px;
+  margin-bottom: 18px;
+  text-shadow: 0 1px 2px rgba(0,0,0,.1);
+}
+
+.hero-tags {
+  display: inline-flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--txt3);
+}
+
+.hero-tags span {
+  background: rgba(255,255,255,.08);
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.15);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition: all .3s;
+  color: var(--txt);
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0,0,0,.1), inset 0 1px 0 rgba(255,255,255,.1);
+}
+
+.hero-tags span:hover {
+  border-color: rgba(255,103,0,.4);
+  background: rgba(255,103,0,.1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255,103,0,.15), inset 0 1px 0 rgba(255,255,255,.15);
+}
+
+/* Cards */
+.card {
+  background: var(--glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r);
+  padding: 28px 24px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow);
+  transition: transform .3s, box-shadow .3s, border-color .3s;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow2);
+  border-color: var(--bdr);
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  letter-spacing: .4px;
+}
+
+.card-title .ic {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--pri), var(--pri2));
+  border-radius: 10px;
+  font-size: 13px;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* Inputs */
+.input-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.input-row label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--txt2);
+  min-width: 70px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+
+.inp {
+  flex: 1;
+  padding: 11px 16px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--bdr);
+  border-radius: 12px;
+  font-size: 14px;
+  outline: none;
+  color: var(--txt);
+  transition: all .25s;
+  min-width: 180px;
+  font-family: 'Inter', 'PingFang SC', sans-serif;
+}
+
+.inp:focus {
+  border-color: var(--pri);
+  box-shadow: 0 0 0 3px rgba(255,131,51,.08);
+}
+
+.inp::placeholder { color: var(--txt3); font-size: 13px; }
+
+select.inp {
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23a0a0c0'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+select.inp option { background: var(--card); color: var(--txt); }
+
+/* Batch Upload */
+.batch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.batch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.batch-item {
+  background: var(--card2);
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  padding: 20px;
+  position: relative;
+  transition: border-color .3s;
+}
+
+.batch-item:hover { border-color: rgba(255,255,255,.1); }
+.batch-item.active { border-color: var(--pri); box-shadow: 0 0 0 1px var(--pri2); }
+
+.batch-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.batch-item-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pri);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.batch-item-label .num {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  background: var(--pri);
+  border-radius: 7px;
+  font-size: 11px;
+  color: #fff;
+}
+
+.batch-item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 720px) { .upload-grid { grid-template-columns: 1fr; } }
+
+.upload-zone {
+  border: 2px dashed rgba(255,131,51,.15);
+  border-radius: 14px;
+  padding: 28px 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .3s;
+  position: relative;
+  overflow: hidden;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--card2);
+}
+
+.upload-zone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,103,0,.03), rgba(255,179,0,.015));
+  opacity: 0;
+  transition: opacity .3s;
+}
+
+.upload-zone:hover { border-color: var(--pri); transform: scale(1.003); }
+.upload-zone:hover::before { opacity: 1; }
+.upload-zone.has-image { border-style: solid; border-color: var(--ok); background: rgba(34,197,94,.02); }
+.upload-zone.dragover { border-color: var(--cyan); background: rgba(255,103,0,.03); transform: scale(1.005); }
+
+.upload-zone .uz-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pri);
+  letter-spacing: .3px;
+}
+
+.upload-zone .uz-hint { font-size: 11px; color: var(--txt3); }
+.upload-zone input[type=file] { display: none; }
+
+.upload-zone img {
+  max-width: 100%;
+  max-height: 150px;
+  border-radius: 10px;
+  object-fit: contain;
+  box-shadow: 0 4px 20px rgba(0,0,0,.3);
+}
+
+.upload-zone .score-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(0deg, rgba(10,10,12,.95), transparent);
+  color: #fff;
+  padding: 14px 12px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  display: none;
+  backdrop-filter: blur(4px);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.upload-zone .score-overlay.show { display: block; }
+
+/* Meter Grid */
+#meterGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.meter-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 1000px) { .meter-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 580px) { .meter-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.meter-card {
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+  padding: 12px 10px 10px;
+  text-align: center;
+  transition: all .4s;
+  position: relative;
+  overflow: hidden;
+}
+
+.meter-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--bdr);
+  transition: background .4s;
+}
+
+.meter-card.done::before { background: linear-gradient(90deg, var(--ok), var(--cyan)); }
+.meter-card.analyzing { border-color: var(--pri); animation: glow 1.5s infinite; }
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(255,131,51,.12); }
+  50% { box-shadow: 0 0 22px rgba(255,131,51,.25); }
+}
+
+.meter-card .mc-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--txt2);
+  margin-bottom: 3px;
+  letter-spacing: .2px;
+}
+
+.meter-card .mc-wt {
+  font-size: 10px;
+  color: var(--txt3);
+  margin-bottom: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.gauge {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 4px;
+}
+
+.gauge svg { transform: rotate(-90deg); }
+.gauge-bg { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 7; }
+.gauge-fg { fill: none; stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset .8s cubic-bezier(.4,0,.2,1), stroke .4s; stroke: var(--txt3); }
+.gauge-fg.s4 { stroke: url(#grad4); }
+.gauge-fg.s3 { stroke: url(#grad3); }
+.gauge-fg.s2 { stroke: url(#grad2); }
+.gauge-fg.s1 { stroke: url(#grad1); }
+
+.gauge-val {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--txt3);
+  transition: color .4s;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.gauge-val.s5 { color: #FFD700; }
+.gauge-val.s4 { color: var(--cyan); }
+.gauge-val.s3 { color: var(--ok); }
+.gauge-val.s2 { color: var(--warn); }
+.gauge-val.s1 { color: var(--bad); }
+
+.mc-reason {
+  font-size: 10px;
+  color: var(--txt2);
+  line-height: 1.4;
+  min-height: 28px;
+  margin-top: 4px;
+}
+
+.mc-status {
+  font-size: 10px;
+  color: var(--txt3);
+  margin-top: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.mc-status.done { color: var(--ok); }
+.group-title {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt2);
+  padding: 10px 0 4px;
+  border-bottom: 1px solid var(--bdr);
+  margin-bottom: 4px;
+}
+.meter-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: rgba(255,103,0,.04);
+  border-radius: 10px;
+  border: 1px solid var(--bdr);
+}
+.crit-toggle {
+  display: inline-block;
+  font-size: 9px;
+  color: var(--pri);
+  cursor: pointer;
+  margin-top: 6px;
+  padding: 2px 6px;
+  border: 1px solid var(--bdr);
+  border-radius: 4px;
+  transition: all .2s;
+}
+.crit-toggle:hover { background: rgba(255,103,0,.08); }
+.crit-body {
+  display: none;
+  margin-top: 6px;
+  text-align: left;
+  font-size: 9px;
+  line-height: 1.5;
+  color: var(--txt3);
+  max-height: 100px;
+  overflow-y: auto;
+}
+.meter-card.crit-open .crit-body { display: block; }
+.meter-card.crit-open .mc-reason,
+.meter-card.crit-open .mc-status { display: none; }
+.crit-row {
+  display: flex;
+  gap: 4px;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255,255,255,.03);
+}
+.crit-score {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  line-height: 14px;
+  text-align: center;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+}
+.crit-score.s5 { background: var(--pri); }
+.crit-score.s4 { background: var(--cyan); }
+.crit-score.s3 { background: var(--ok); }
+.crit-score.s2 { background: var(--warn); }
+.crit-score.s1 { background: var(--bad); }
+.crit-desc { flex: 1; }
+
+
+/* Progress Bar */
+.progress-wrap {
+  display: none;
+  margin-bottom: 16px;
+}
+
+.progress-wrap.show { display: block; }
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--txt2);
+}
+
+.progress-label .pl-status {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--pri);
+  font-weight: 600;
+}
+
+.progress-track {
+  height: 6px;
+  background: rgba(255,255,255,.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--pri), var(--pri2), var(--cyan));
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+}
+
+/* Buttons */
+.btn {
+  padding: 11px 26px;
+  border: none;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .25s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: .3px;
+  font-family: 'Inter', sans-serif;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.08), transparent);
+  opacity: 0;
+  transition: opacity .2s;
+}
+
+.btn:hover::after { opacity: 1; }
+
+.btn-pri {
+  background: linear-gradient(135deg, var(--pri), #8b5cf6);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(255,103,0,.38);
+}
+
+.btn-pri:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,103,0,.3); }
+.btn-pri:disabled { background: #2A2A30; color: #555; box-shadow: none; cursor: not-allowed; transform: none; }
+
+.btn-out {
+  background: transparent;
+  color: var(--pri);
+  border: 1.5px solid rgba(255,131,51,.18);
+}
+
+.btn-out:hover { background: rgba(255,103,0,.08); border-color: var(--pri); color: var(--pri); }
+
+.btn-danger {
+  background: transparent;
+  color: #FCA5A5;
+  border: 1.5px solid rgba(239,68,68,.15);
+}
+
+.btn-danger:hover { background: rgba(239,68,68,.06); border-color: rgba(239,68,68,.3); }
+
+.btn-sm { padding: 8px 18px; font-size: 12px; border-radius: 10px; }
+.btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; align-items: center; }
+.btn-row.left { justify-content: flex-start; }
+
+/* Report */
+.report-card { display: none; animation: slideUp .5s ease; }
+.report-card.show { display: block; }
+/* .tab-panel.active .report-card is in the injected CSS above */
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.report-header {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.total-ring { position: relative; width: 120px; height: 120px; flex-shrink: 0; }
+.total-ring svg { transform: rotate(-90deg); }
+.total-ring .tr-bg { fill: none; stroke: rgba(255,255,255,.04); stroke-width: 9; }
+.total-ring .tr-fg { fill: none; stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset 1s cubic-bezier(.4,0,.2,1); }
+
+.total-ring .tr-val {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.total-ring .tr-num {
+  font-size: 34px;
+  font-weight: 900;
+  color: var(--txt);
+  font-family: 'JetBrains Mono', monospace;
+  text-shadow: 0 1px 3px rgba(255,103,0,.15);
+}
+
+.total-ring .tr-label { font-size: 10px; color: var(--txt2); letter-spacing: .3px; }
+
+.rating-badge {
+  display: inline-block;
+  padding: 8px 24px;
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.rb-excellent { background: linear-gradient(135deg, #0d1b3e, #1a237e); color: var(--cyan); box-shadow: 0 0 20px rgba(255,103,0,.12); }
+.rb-good { background: linear-gradient(135deg, #0d2818, #1b5e20); color: var(--ok); box-shadow: 0 0 20px rgba(34,197,94,.12); }
+.rb-qualified { background: linear-gradient(135deg, #3e2723, #e65100); color: #fff; box-shadow: 0 0 20px rgba(245,158,11,.12); }
+.rb-poor { background: linear-gradient(135deg, #3e0a0a, #b71c1c); color: #ffcdd2; box-shadow: 0 0 20px rgba(239,68,68,.12); }
+
+.report-meta {
+  font-size: 12px;
+  color: var(--txt2);
+  margin-top: 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Score Table */
+.score-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 16px 0;
+  font-size: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.score-table th {
+  background: rgba(255,103,0,.18);
+  color: var(--pri);
+  padding: 11px 14px;
+  font-weight: 700;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+}
+
+.score-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bdr);
+  text-align: center;
+}
+
+.score-table tr:nth-child(even) { background: rgba(255,255,255,.06); }
+.score-table tr:hover { background: rgba(255,255,255,.06); }
+
+.penalty-box {
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.penalty-block { background: rgba(239,68,68,.05); border: 1px solid rgba(239,68,68,.12); color: #FCA5A5; }
+.penalty-warn { background: rgba(245,158,11,.03); border: 1px solid rgba(245,158,11,.1); color: #ffd54f; }
+.penalty-review { background: rgba(34,197,94,.03); border: 1px solid rgba(34,197,94,.08); color: #69f0ae; }
+
+/* Compare */
+.compare-wrap {
+  overflow-x: auto;
+  margin: 16px 0;
+  border-radius: 12px;
+  border: 1px solid var(--bdr);
+}
+
+.cmp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 500px;
+}
+
+.cmp-table th {
+  background: rgba(255,103,0,.18);
+  color: var(--pri);
+  padding: 10px 12px;
+  position: sticky;
+  top: 0;
+  font-weight: 700;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.cmp-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--bdr);
+  text-align: center;
+}
+
+.cmp-table tr:nth-child(even) { background: rgba(255,255,255,.06); }
+.cmp-table .best { background: rgba(34,197,94,.05); color: var(--ok); font-weight: 700; }
+.cmp-table .worst { background: rgba(239,68,68,.03); color: #FCA5A5; }
+
+.light-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  border-radius: 20px;
+  font-size: 12px;
+  margin: 4px;
+  transition: all .2s;
+}
+
+.light-chip:hover { border-color: var(--pri); }
+.light-chip .rm { cursor: pointer; opacity: .3; font-size: 14px; transition: opacity .2s; }
+.light-chip .rm:hover { opacity: 1; color: var(--bad); }
+
+/* Radar Chart */
+.radar-section {
+  margin: 24px 0;
+  padding: 24px;
+  background: var(--card2);
+  border: 1px solid var(--bdr);
+  border-radius: 14px;
+}
+
+.radar-section h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt2);
+  margin-bottom: 16px;
+  letter-spacing: .3px;
+}
+
+.radar-container {
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Bar Rows */
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 7px 0;
+}
+
+.bar-label {
+  width: 110px;
+  font-size: 11px;
+  color: var(--txt2);
+  text-align: right;
+  flex-shrink: 0;
+  letter-spacing: .2px;
+}
+
+.bar-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(255,255,255,.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width .8s cubic-bezier(.4,0,.2,1);
+  min-width: 0;
+}
+
+.bar-fill.s5 { background: linear-gradient(90deg, #FFD700, #FFA500); }
+.bar-fill.s4 { background: linear-gradient(90deg, #00e5ff, #FF6700); }
+.bar-fill.s3 { background: linear-gradient(90deg, #66bb6a, #22C55E); }
+.bar-fill.s2 { background: linear-gradient(90deg, #FB923C, #F59E0B); }
+.bar-fill.s1 { background: linear-gradient(90deg, #EF4444, #EF4444); }
+
+.bar-score {
+  width: 28px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Export */
+.export-box {
+  background: rgba(0,0,0,.4);
+  border: 1px solid var(--bdr);
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  line-height: 1.7;
+  max-height: 500px;
+  overflow-y: auto;
+  font-family: 'JetBrains Mono', monospace;
+  display: none;
+  color: var(--txt2);
+}
+
+.export-box.show { display: block; }
+
+.import-area {
+  display: none;
+  margin-top: 12px;
+}
+
+.import-area.show { display: block; }
+
+.import-area textarea {
+  width: 100%;
+  min-height: 80px;
+  background: rgba(0,0,0,.4);
+  border: 1px solid var(--bdr);
+  border-radius: 10px;
+  padding: 12px;
+  color: var(--txt2);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  resize: vertical;
+  outline: none;
+}
+
+.import-area textarea:focus {
+  border-color: var(--pri);
+}
+
+/* Footer */
+
+.group-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.group-btn{padding:8px 18px;border:1.5px solid var(--bdr);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .25s;color:var(--txt2);background:transparent;font-family:'Inter',sans-serif;letter-spacing:.2px}
+.group-btn.active{border-color:var(--pri);background:rgba(255,103,0,.12);color:var(--pri)}
+.group-btn:hover:not(.active){border-color:rgba(255,255,255,.12);color:var(--txt)}
+.group-btn .g-total{font-family:'JetBrains Mono',monospace;font-weight:700;margin-right:4px}
+.detail-toggle{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--glass);border:1px solid var(--bdr);border-radius:10px;font-size:12px;font-weight:600;color:var(--txt2);cursor:pointer;transition:all .25s;margin-top:14px;font-family:'Inter',sans-serif}
+.detail-toggle:hover{border-color:var(--pri);color:var(--pri)}
+.detail-toggle svg{transition:transform .3s}
+.detail-toggle.open svg{transform:rotate(180deg)}
+.detail-panel{display:none;animation:slideDown .3s ease}
+.detail-panel.show{display:block}
+@keyframes slideDown{from{opacity:0}to{opacity:1}}
+.nav-tabs{position:sticky;top:0;z-index:50;display:flex;gap:2px;background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:100px;padding:4px;margin-bottom:24px}
+.nav-tab{flex:1;padding:11px 12px;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);color:var(--txt3);background:transparent;font-family:'Inter',sans-serif;letter-spacing:.3px;text-align:center;white-space:nowrap}
+.nav-tab.active{background:var(--pri);color:#fff;box-shadow:0 2px 12px rgba(255,103,0,.35)}
+.nav-tab:not(.active):hover{color:var(--txt2);background:rgba(255,255,255,.04)}
+.tab-panel{display:none;animation:fadeIn .35s ease}
+.tab-panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.tab-panel.active .report-card{display:block}
+.batch-result-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,.05)}
+
+/* ── 亮暗模式切换按钮 ── */
+.theme-toggle{position:fixed;top:20px;right:20px;z-index:1000;width:44px;height:44px;border-radius:50%;border:1px solid var(--bdr);background:var(--glass);color:var(--txt);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.theme-toggle:hover{transform:scale(1.1);border-color:var(--pri);box-shadow:0 4px 20px rgba(255,103,0,.25)}
+
+
+.cmp-summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.cmp-summary-card{background:var(--card2);border:1px solid var(--bdr);border-radius:14px;padding:18px;text-align:center;transition:border-color .3s}
+.cmp-summary-card.rank1{border-color:rgba(255,103,0,.2);background:rgba(255,103,0,.03)}
+.cmp-summary-card .csc-rank{font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.5px;margin-bottom:6px}
+.cmp-summary-card.rank1 .csc-rank{color:var(--pri)}
+.cmp-summary-card .csc-name{font-size:14px;font-weight:800;color:var(--txt);margin-bottom:4px}
+.cmp-summary-card .csc-score{font-size:28px;font-weight:900;font-family:'JetBrains Mono',monospace;margin-bottom:2px}
+.cmp-summary-card .csc-rating{font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;display:inline-block}
+.cmp-bar-group{margin-bottom:22px}
+.cmp-bar-group .cbg-title{font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:10px;display:flex;align-items:center;gap:8px;letter-spacing:.3px}
+.cmp-bar-group .cbg-title span{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--txt3)}
+.cmp-bar-item{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.cmp-bar-item .cbi-name{width:80px;font-size:11px;color:var(--txt2);text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmp-bar-item .cbi-track{flex:1;height:22px;background:var(--bdr2);border-radius:6px;overflow:hidden;position:relative}
+.cmp-bar-item .cbi-fill{height:100%;border-radius:6px;transition:width .8s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:10px;font-weight:700;color:#fff;font-family:'JetBrains Mono',monospace;min-width:28px}
+.cmp-bar-item .cbi-fill.best{box-shadow:0 0 8px rgba(255,103,0,.15)}
+.cmp-bar-item .cbi-fill.worst{opacity:.7}
+.cmp-bar-item .cbi-fill.s5{background:linear-gradient(90deg,#FFD700,#FFA500)}
+.cmp-bar-item .cbi-fill.s4{background:linear-gradient(90deg,var(--pri3),var(--pri))}
+.cmp-bar-item .cbi-fill.s3{background:linear-gradient(90deg,rgba(34,197,94,.5),var(--ok))}
+.cmp-bar-item .cbi-fill.s2{background:linear-gradient(90deg,rgba(245,158,11,.5),var(--warn))}
+.cmp-bar-item .cbi-fill.s1{background:linear-gradient(90deg,rgba(239,68,68,.5),var(--bad))}
+.cmp-bar-item .cbi-score{width:32px;font-size:12px;font-weight:800;text-align:left;flex-shrink:0;font-family:'JetBrains Mono',monospace}
+.heatmap-wrap{overflow-x:auto;margin:16px 0;border-radius:12px;border:1px solid var(--bdr)}
+.heatmap{width:100%;border-collapse:collapse;font-size:12px;min-width:400px}
+.heatmap th{padding:10px 12px;background:rgba(255,103,0,.06);color:var(--pri);font-weight:700;font-size:11px;letter-spacing:.3px;text-align:center}
+.heatmap td{padding:10px;text-align:center;font-weight:700;font-family:'JetBrains Mono',monospace;font-size:14px;border:1px solid var(--bdr2);transition:background .3s}
+.heatmap td.hm5{background:rgba(255,215,0,.1);color:#FFD700}
+.heatmap td.hm4{background:rgba(255,103,0,.1);color:var(--pri)}
+.heatmap td.hm3{background:rgba(34,197,94,.08);color:var(--ok)}
+.heatmap td.hm2{background:rgba(245,158,11,.08);color:var(--warn)}
+.heatmap td.hm1{background:rgba(239,68,68,.08);color:var(--bad)}
+.heatmap td.hm-name{text-align:left;font-weight:600;font-family:'Inter',sans-serif;font-size:12px;color:var(--txt2)}
+.heatmap td.hm-total{font-size:15px;font-weight:900}
+.heatmap tr:nth-child(even){background:rgba(255,255,255,.01)}
+.cmp-legend{display:flex;gap:16px;margin:12px 0;flex-wrap:wrap;font-size:11px;color:var(--txt3)}
+.cmp-legend span{display:inline-flex;align-items:center;gap:5px}
+.cmp-legend .dot{width:12px;height:12px;border-radius:3px;display:inline-block}
+.cmp-legend .dot.d4{background:rgba(255,103,0,.15);border:1px solid rgba(255,103,0,.2)}
+.cmp-legend .dot.d3{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.25)}
+.cmp-legend .dot.d2{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.25)}
+.cmp-legend .dot.d1{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.25)}
+
+
+.cmp-available{margin-top:14px}
+.cmp-avail-title{font-size:11px;font-weight:700;color:var(--txt3);margin-bottom:8px;letter-spacing:.3px}
+.cmp-avail-list{display:flex;flex-wrap:wrap;gap:8px}
+.cmp-avail-item{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;border:1px solid var(--bdr);background:var(--card2);cursor:pointer;transition:all .25s;font-size:12px;color:var(--txt2);user-select:none}
+.cmp-avail-item:hover{border-color:rgba(255,103,0,.3);background:rgba(255,103,0,.05)}
+.cmp-avail-item.in-list{border-color:var(--ok);background:rgba(34,197,94,.04)}
+.cmp-avail-item .cai-score{font-weight:800;font-family:'JetBrains Mono',monospace;font-size:14px}
+.export-list{margin-bottom:18px}
+.el-select-all{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--bdr);font-size:12px;color:var(--txt2);margin-bottom:8px}
+.el-select-all input{accent-color:var(--pri)}
+.el-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--bdr);border-radius:12px;margin-bottom:8px;transition:all .25s}
+.el-item:hover{border-color:rgba(255,103,0,.25);background:rgba(255,103,0,.03)}
+.el-item.el-sel{border-color:rgba(255,103,0,.35);background:rgba(255,103,0,.04)}
+.el-item input[type="checkbox"]{accent-color:var(--pri);width:16px;height:16px;flex-shrink:0;cursor:pointer}
+.el-info{flex:1;min-width:0}
+.el-name{font-size:13px;font-weight:600;color:var(--txt);margin-bottom:2px}
+.el-meta{font-size:11px;color:var(--txt3);display:flex;gap:12px}
+.el-score{font-size:20px;font-weight:900;font-family:'JetBrains Mono',monospace;flex-shrink:0;text-align:right}
+.el-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:nowrap}
+.cmp-empty{text-align:center;padding:40px 20px;color:var(--txt3);font-size:13px}
+.cmp-empty .cmp-empty-icon{font-size:36px;margin-bottom:10px;opacity:.4}
+
+.metric-chart{margin:16px 0}
+.metric-chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px}
+.metric-chart-card{background:var(--card2);border:1px solid var(--bdr);border-radius:var(--r);padding:16px;text-align:center}
+.metric-chart-card .mcc-title{font-size:12px;font-weight:700;color:var(--txt2);margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:4px}
+.metric-chart-card .mcc-bars{display:flex;align-items:flex-end;justify-content:center;gap:6px;height:100px;margin-bottom:8px}
+.metric-chart-card .mcc-bar-col{display:flex;flex-direction:column;align-items:center;width:28px}
+.metric-chart-card .mcc-bar{width:100%;border-radius:4px 4px 0 0;transition:height .6s cubic-bezier(.4,0,.2,1);position:relative;min-height:2px}
+.metric-chart-card .mcc-bar-val{font-size:11px;font-weight:800;font-family:'Ubuntu Mono',monospace;margin-bottom:2px}
+.metric-chart-card .mcc-bar-name{font-size:9px;color:var(--txt3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:36px}
+.metric-chart-card .mcc-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:4px}
+.metric-chart-card .mcc-legend span{font-size:10px;color:var(--txt3);display:flex;align-items:center;gap:3px}
+.metric-chart-card .mcc-legend .mcc-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+
+.cmp-merged{margin-top:20px;background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden}
+.cmp-merged-header{font-size:13px;font-weight:700;color:var(--txt2);padding:12px 16px;background:rgba(255,103,0,.04);border-bottom:1px solid var(--bdr);letter-spacing:.3px}
+.cmp-merged-table{display:flex;flex-direction:column}
+.cmp-merged-row{display:grid;grid-template-columns:180px 60px 1fr 80px;border-bottom:1px solid var(--bdr2);transition:background .2s}
+.cmp-merged-row:last-child{border-bottom:none}
+.cmp-merged-row:not(.cmp-merged-row-head):hover{background:rgba(255,103,0,.02)}
+.cmp-merged-row-head{background:rgba(255,103,0,.03);font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.3px}
+.cmp-merged-cell{padding:10px 12px;display:flex;align-items:center;font-size:12px}
+.cmp-merged-metric{font-weight:700;color:var(--txt2);gap:6px}
+.cmp-merged-weight{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--txt3);justify-content:center}
+.cmp-merged-score{flex-direction:column;gap:3px;align-items:stretch}
+.cmp-merged-diff{justify-content:center}
+.cmp-ms-bar-wrap{height:8px;background:var(--bdr2);border-radius:4px;overflow:hidden;width:100%}
+.cmp-ms-bar{height:100%;border-radius:4px;transition:width .5s ease}
+.cmp-ms-bar.s5{background:#FFD700}
+.cmp-ms-bar.s4{background:var(--pri)}
+.cmp-ms-bar.s3{background:var(--ok)}
+.cmp-ms-bar.s2{background:var(--warn)}
+.cmp-ms-bar.s1{background:var(--bad)}
+.cmp-ms-bar.best{box-shadow:0 0 6px rgba(255,103,0,.12)}
+.cmp-ms-bar.worst{opacity:.55}
+.cmp-ms-val{font-size:12px;font-weight:800;font-family:'JetBrains Mono',monospace;text-align:center}
+.cmp-diff-badge{font-size:11px;font-weight:800;font-family:'JetBrains Mono',monospace;padding:3px 10px;border-radius:20px}
+.cmp-diff-badge.diff-hi{background:rgba(239,68,68,.08);color:var(--bad)}
+.cmp-diff-badge.diff-mid{background:rgba(245,158,11,.08);color:var(--warn)}
+.cmp-diff-badge.diff-low{background:rgba(34,197,94,.08);color:var(--ok)}
+
+.footer {
+  text-align: center;
+  padding: 28px;
+  font-size: 12px;
+  color: var(--txt3);
+  border-top: 1px solid var(--bdr);
+  margin-top: 48px;
+  letter-spacing: .4px;
+  font-family: 'Ubuntu', sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.4); }
+
+/* Tab Switcher */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  background: var(--card2);
+  border: 1px solid var(--bdr);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .25s;
+  color: var(--txt3);
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: .3px;
+}
+
+.tab-btn.active {
+  background: var(--pri);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(255,103,0,.3);
+}
+
+.tab-btn:not(.active):hover { color: var(--txt2); background: rgba(255,255,255,.03); }
+</style>
+</head>
+<body>
+
+<!-- SVG Gradients -->
+<svg width="0" height="0" style="position:absolute">
+<defs>
+  <linearGradient id="grad4" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#00e5ff"/><stop offset="100%" stop-color="#FF6700"/></linearGradient>
+  <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#66bb6a"/><stop offset="100%" stop-color="#22C55E"/></linearGradient>
+  <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#FB923C"/><stop offset="100%" stop-color="#F59E0B"/></linearGradient>
+  <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#EF4444"/><stop offset="100%" stop-color="#EF4444"/></linearGradient>
+  <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF6700"/><stop offset="50%" stop-color="#FF8533"/><stop offset="100%" stop-color="#FFB380"/></linearGradient>
+  <radialGradient id="beam-grad"><stop offset="0%" stop-color="#FFB380" stop-opacity=".35"/><stop offset="55%" stop-color="#F59E0B" stop-opacity=".12"/><stop offset="100%" stop-color="#F59E0B" stop-opacity="0"/></radialGradient>
+  <radialGradient id="beam-core-grad"><stop offset="0%" stop-color="#FFF7ED" stop-opacity=".5"/><stop offset="100%" stop-color="#FFB380" stop-opacity="0"/></radialGradient>
+</defs>
+</svg>
+
+<!-- ═══ Guide Page ═══ -->
+<div class="guide-page" id="guidePage">
+  <video class="guide-video-bg" autoplay muted loop playsinline>
+    <source src="guide-bg.mp4" type="video/mp4">
+  </video>
+  <div class="guide-video-overlay"></div>
+  <div class="guide-content">
+        <h1 class="guide-title">HEADLIGHT<br>EVALUATOR</h1>
+    <p class="guide-subtitle">前照灯主观评价系统 · AI 智能评分引擎</p>
+    <div class="guide-features">
+      <div class="guide-feat">
+        <span class="gf-icon">⚡</span>
+        <div class="gf-title">批量上传</div>
+        <div class="gf-desc">支持多组图片同时上传，一次性完成多灯评价</div>
+      </div>
+      <div class="guide-feat">
+        <span class="gf-icon">◎</span>
+        <div class="gf-title">雷达对比</div>
+        <div class="gf-desc">多维雷达图直观展示各灯具性能差异</div>
+      </div>
+      <div class="guide-feat">
+        <span class="gf-icon">✦</span>
+        <div class="gf-title">防失真规则</div>
+        <div class="gf-desc">中央趋势惩罚、一票降级等规则保障评分可信度</div>
+      </div>
+    </div>
+    <button class="guide-enter" onclick="enterApp()">
+      进入系统
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3l7 7-7 7-1.4-1.4L13.2 11H3V9h10.2L8.6 4.4z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ═══ Main Application ═══ -->
+<div class="app-wrap" id="appWrap">
+<button class="back-btn" onclick="goBackToGuide()">
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M10 3L4 8l6 5 1.4-1.4L6.8 8l4.6-3.6z"/></svg>
+  返回
+</button>
+<div class="hero">
+  <button type="button" class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换到亮色模式">☀️</button>
+  <svg class="hero-beam" viewBox="0 0 240 170">
+    <polygon fill="url(#beam-grad)" points="80,155 160,155 205,35 35,35" style="filter:blur(6px)"/>
+    <polygon fill="url(#beam-core-grad)" points="95,155 145,155 165,60 75,60"/>
+    <circle cx="120" cy="158" r="44" fill="url(#beam-grad)" style="filter:blur(3px)"/>
+    <ellipse cx="120" cy="156" rx="15" ry="6" fill="#FFF7ED" opacity=".55"/>
+  </svg>
+  <div class="hero-content">
+    <h1>前照灯主观评价系统</h1>
+    <p>AI 自动评分 · 批量上传 · 雷达图对比 · 防失真惩罚规则</p>
+    <div class="hero-tags">
+      <span>实物图 4 项</span>
+      <span>伪彩图 6 项</span>
+      <span>1~5 分制</span>
+      <span>雷达图对比</span>
+    </div>
+  </div>
+</div>
+
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="switchTab('upload')">上传评分</button>
+  <button class="nav-tab" onclick="switchTab('report')">评价报告</button>
+  <button class="nav-tab" onclick="switchTab('compare')">多灯对比</button>
+  <button class="nav-tab" onclick="switchTab('export')">导出</button>
+</div>
+
+<div class="tab-panel active" id="panel-upload">
+<!-- 批量上传 -->
+<div class="card">
+  <div class="card-title"><span class="ic">+</span> 上传图片 · AI 自动评分</div>
+  <div class="batch-header">
+    <span style="font-size:12px;color:var(--txt3)">每组包含实物图 + 伪彩图，可添加多组同时评价</span>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-out btn-sm" onclick="addBatchItem()">+ 添加一组</button>
+      <button class="btn btn-danger btn-sm" onclick="clearBatch()">清空全部</button>
+    </div>
+  </div>
+  <div class="batch-list" id="batchList"></div>
+</div>
+
+<!-- AI 评分仪表盘 -->
+<div class="card">
+  <div class="card-title"><span class="ic">G</span> AI 评分仪表盘</div>
+  <div class="meter-toolbar">
+    <button class="btn btn-pri" id="btnAnalyze" onclick="analyzeAll()" disabled>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M11 0L9.6 5.6 14 8l-4.4 2.4L11 16l-5-4L1 8l5-4z"/></svg>
+      评分当前组
+    </button>
+    <button class="btn btn-out" id="btnAnalyzeAll" onclick="analyzeAllBatch()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h4v4H2zM10 2h4v4h-4zM2 10h4v4H2zM10 10h4v4h-4z"/></svg>
+      全部评分
+    </button>
+    <button class="btn btn-out btn-sm" onclick="resetAll()">清空重来</button>
+  </div>
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-label">
+      <span>AI 分析进度</span>
+      <span class="pl-status" id="progressText">0 / 0</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+  <div id="meterGrid"></div>
+</div>
+
+</div>
+
+<div class="tab-panel" id="panel-report">
+<!-- 评价报告 -->
+<div class="card report-card" id="reportCard">
+  <div class="card-title"><span class="ic">R</span> 评价报告</div>
+  <div class="group-selector" id="groupSelector"></div>
+  <div id="reportContent"></div>
+</div>
+
+</div>
+
+<div class="tab-panel" id="panel-compare">
+<!-- 多灯对比 -->
+<div class="card report-card" id="compareCard">
+  <div class="card-title"><span class="ic">C</span> 多灯对比</div>
+  <div id="chipList" style="margin-bottom:12px"></div>
+  <div class="btn-row left">
+    <button class="btn btn-out btn-sm" onclick="clearList()">清空列表</button>
+    <button class="btn btn-out btn-sm" onclick="doExportJSONCompare()">导出JSON</button>
+    <button class="btn btn-out btn-sm" onclick="doExportHTMLCompare()">导出网页</button>
+  </div>
+  <div id="cmpAvail" class="cmp-available"></div>
+  <div class="radar-section" id="radarSection" style="display:none">
+    <h4>多维雷达图对比</h4>
+    <div class="radar-container">
+      <canvas id="radarChart"></canvas>
+    </div>
+  </div>
+  <div id="compareContent" style="margin-top:16px"></div>
+  <div id="cmpBarChart" style="margin-bottom:20px"></div>
+  <div class="heatmap-wrap" id="heatmapWrap" style="display:none"></div>
+</div>
+
+</div>
+
+<div class="tab-panel" id="panel-export">
+<!-- 导出 -->
+<div class="card report-card" id="exportCard">
+  <div class="card-title"><span class="ic">E</span> 导出报告</div>
+  <div id="exportList"></div>
+  <div class="btn-row left">
+    <button class="btn btn-out btn-sm" onclick="doJsonExport()">导出全部 JSON</button>
+    <button class="btn btn-out btn-sm" onclick="toggleImport()">导入 JSON</button>
+  </div>
+  <div class="export-box" id="exportBox"></div>
+  <div class="import-area" id="importArea">
+    <textarea id="importInput" placeholder="粘贴 JSON 数据..."></textarea>
+    <div class="btn-row left" style="margin-top:10px">
+      <button class="btn btn-pri btn-sm" onclick="doJsonImport()">确认导入</button>
+      <button class="btn btn-out btn-sm" onclick="toggleImport()">取消</button>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<div class="footer">前照灯主观评价系统 v4.0 · AI 自动评分 · 依据《前照灯主观评价标准 2026.07》</div>
+
+<script>window.Chart||document.write('<script src="https://unpkg.com/chart.js@4.5.0/dist/chart.umd.js"><\/script>')</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script>
+function escapeHtml(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ═══════════════════════════════════════════════
+// Constants
+// ═══════════════════════════════════════════════
+const METRICS = [
+  { key: 'uniformity',      name: '均匀性',            wt: { low: 20, high: 15 }, type: 'real',  icon: '◐' },
+  { key: 'cutoffLine',   name: '下边界整齐度',       wt: { low: 5,  high: 5 },  type: 'real',  icon: '▬' },
+  { key: 'strayLight',      name: '杂散光',            wt: { low: 10, high: 0 },  type: 'real',  icon: '◌' },
+  { key: 'glare',           name: '眩目安全',           wt: { low: 8,  high: 0 },  type: 'real',  icon: '⚡' },
+  { key: 'nearField',    name: '近场暗区',           wt: { low: 5,  high: 0 },  type: 'fake',  icon: '◼' },
+  { key: 'leftWidth',       name: '左侧宽度',           wt: { low: 10, high: 0 },  type: 'fake',  icon: '←' },
+  { key: 'rightWidth',      name: '右侧宽度',           wt: { low: 10, high: 0 },  type: 'fake',  icon: '→' },
+  { key: 'leftIlluminance',  name: '左侧照度',           wt: { low: 10, high: 15 }, type: 'fake',  icon: '↙' },
+  { key: 'rightIlluminance', name: '右侧照度',           wt: { low: 10, high: 15 }, type: 'fake',  icon: '↘' },
+  { key: 'illuminance',    name: '光照度',             wt: { low: 12, high: 0 },  type: 'fake',  icon: '☀' },
+
+
+  { key: 'distance',        name: '远度',              wt: { low: 0,  high: 40 }, type: 'fake',  icon: '↕' },
+  { key: 'farNearConsistency',     name: '远近光一致性',        wt: { low: 0,  high: 10 }, type: 'real',  icon: '≒' }
+];
+
+
+// ═══════════════════════════════════════════════
+// 评分标准详表（来源：SKILL.md V5）
+// ═══════════════════════════════════════════════
+const CRITERIA = {
+  strayLight: {
+    low: [
+      { s: 5, d: '截止线上方完全纯黑，车头前方路面零泛白' },
+      { s: 4, d: '极微弱光晕（<1°），仔细观察才可察觉，路面基本干净' },
+      { s: 3, d: '可辨光晕带（1°~3°），路面有轻微泛白' },
+      { s: 2, d: '光晕带较宽（3°~5°），路面泛白发雾，致眩风险' },
+      { s: 1, d: '严重漏光，大面积光晕（>5°），致眩' }
+    ]
+  },
+  glare: {
+    low: [
+      { s: 5, d: '截止线高度控制极佳，上溢光线极微，对向驾驶员零致眩风险' },
+      { s: 4, d: '截止线高度控制良好，有极轻微上溢但不影响对向来车' },
+      { s: 3, d: '截止线高度略有偏高，上溢光线可辨，对向来车有轻微不适' },
+      { s: 2, d: '截止线高度明显偏高，上溢光线较宽，致眩风险较大' },
+      { s: 1, d: '截止线高度失控，大面积上溢光，严重致眩' }
+    ]
+  },
+  nearField: {
+    low: [
+      { s: 5, d: '车头前均匀充足照明，零暗区，近场照度极佳' },
+      { s: 4, d: '近场整体可接受，有极轻微暗区' },
+      { s: 3, d: '暗区明显，近场照明偏弱，约2~5m区域偏暗' },
+      { s: 2, d: '明显暗区，近处看不清路面，存在安全隐患' },
+      { s: 1, d: '大面积死黑，近场照明严重缺失，安全隐患极大' }
+    ]
+  },
+  leftWidth: {
+    low: [
+      { s: 5, d: '路左侧远处清晰可辨，可视距离极远' },
+      { s: 4, d: '左侧可视基本充足' },
+      { s: 3, d: '左侧可视偏短，远处辨识度降低，有盲区' },
+      { s: 2, d: '路左侧几乎无可视，存在安全隐患' },
+      { s: 1, d: '路左侧无照明，严重安全隐患' }
+    ]
+  },
+  rightWidth: {
+    low: [
+      { s: 5, d: '50m外右侧充足，清晰可见，可视距离极远' },
+      { s: 4, d: '右侧可视基本充足' },
+      { s: 3, d: '右侧可视偏暗/不足，远处辨识度降低' },
+      { s: 2, d: '路右侧几乎无可视' },
+      { s: 1, d: '路右侧无照明，严重隐患' }
+    ]
+  },
+  uniformity: {
+    low: [
+      { s: 5, d: '两区完全一致，中心到边缘连续递减，零暗区零亮斑' },
+      { s: 4, d: '整体均匀，分区检查发现极轻微明暗差异，不影响整体感' },
+      { s: 3, d: '存在可见暗区，面积约 ≤ 光型面积1/8，对驾驶有轻微影响' },
+      { s: 2, d: '暗区明显，面积约1/4，左右亮度差异明显，影响局部照明' },
+      { s: 1, d: '大面积暗区或左右严重不对称，照明功能基本丧失' }
+    ],
+    high: [
+      { s: 5, d: '两区完全一致，中心到边缘连续递减，零暗区零亮斑' },
+      { s: 4, d: '整体均匀，分区检查发现极轻微明暗差异，不影响整体感' },
+      { s: 3, d: '存在可见暗区，面积约 ≤ 光型面积1/8，对驾驶有轻微影响' },
+      { s: 2, d: '暗区明显，面积约1/4，左右亮度差异明显' },
+      { s: 1, d: '大面积暗区或左右严重不对称，照明功能基本丧失' }
+    ]
+  },
+  cutoffLine: {
+    low: [
+      { s: 5, d: '截止线全程笔直如刀切，无拐角痕迹，下方边界绝对干净' },
+      { s: 4, d: '截止线整体笔直，拐角处有轻微痕迹但不突兀，下方边界整洁' },
+      { s: 3, d: '截止线有可见波浪起伏，拐角处痕迹较明显，下方有轻微晕染' },
+      { s: 2, d: '截止线弯曲或变形，拐角明显圆弧化，下方有明显向上晕染' },
+      { s: 1, d: '截止线不可辨，拐角完全圆弧化，下方大面积晕染' }
+    ],
+    high: [
+      { s: 5, d: '截止线全程笔直如刀切，无拐角痕迹' },
+      { s: 4, d: '截止线整体笔直，拐角处有轻微痕迹但不突兀' },
+      { s: 3, d: '截止线有可见波浪起伏，拐角处痕迹较明显' },
+      { s: 2, d: '截止线弯曲或变形，拐角明显圆弧化' },
+      { s: 1, d: '截止线不可辨，拐角完全圆弧化' }
+    ]
+  },
+  leftIlluminance: {
+    low: [
+      { s: 5, d: '5-50m左侧照度极高，清晰检测一切障碍物' },
+      { s: 4, d: '左侧基本覆盖，检测正常' },
+      { s: 3, d: '左侧偏暗，检测较困难' },
+      { s: 2, d: '左侧照度不足，检测困难' },
+      { s: 1, d: '左侧路面无照明' }
+    ],
+    high: [
+      { s: 5, d: '90m内左侧照度极高，行人检测能力优秀' },
+      { s: 4, d: '左侧基本覆盖，检测正常' },
+      { s: 3, d: '左侧偏暗，检测能力下降' },
+      { s: 2, d: '左侧照度明显不足' },
+      { s: 1, d: '左侧路面无照明' }
+    ]
+  },
+  rightIlluminance: {
+    low: [
+      { s: 5, d: '5-50m右侧照度极高，检测能力优秀' },
+      { s: 4, d: '右侧基本覆盖，检测正常' },
+      { s: 3, d: '右侧偏暗，检测较困难' },
+      { s: 2, d: '右侧照度不足' },
+      { s: 1, d: '右侧路面无照明' }
+    ],
+    high: [
+      { s: 5, d: '90m内右侧照度极高，行人检测能力优秀' },
+      { s: 4, d: '右侧基本覆盖，检测正常' },
+      { s: 3, d: '右侧偏暗，检测能力下降' },
+      { s: 2, d: '右侧照度明显不足' },
+      { s: 1, d: '右侧路面无照明' }
+    ]
+  },
+  illuminance: {
+    low: [
+      { s: 5, d: '路面最大照度极高，光量充沛，强烈光明感' },
+      { s: 4, d: '照度足够，满足驾驶需求' },
+      { s: 3, d: '照度不足，光量偏暗' },
+      { s: 2, d: '照度明显不足，路面偏暗' },
+      { s: 1, d: '照度近乎为零，照明功能丧失' }
+    ]
+  },
+  distance: {
+    high: [
+      { s: 5, d: '截止线远端扎实锐利，远处亮度无衰减，远近场梯度完美平滑' },
+      { s: 4, d: '远端略有软化但亮度充足，远近场梯度略陡但可接受' },
+      { s: 3, d: '远端偏暗，有轻微断尾，梯度偏陡' },
+      { s: 2, d: '远端消失/断裂，远处融入黑暗' },
+      { s: 1, d: '远端完全消失，光型严重缩短' }
+    ]
+  },
+  farNearConsistency: {
+    high: [
+      { s: 5, d: '90m处过渡极其平滑自然，远近光衔接无感' },
+      { s: 4, d: '基本自然，略有梯度但可接受' },
+      { s: 3, d: '梯度不均，近亮远暗较明显' },
+      { s: 2, d: '严重割裂，亮暗突兀' },
+      { s: 1, d: '完全割裂，远近光形同两个独立光型' }
+    ]
+  }
+};
+
+const RATING = {
+  excellent: { label: '优秀', cls: 'rb-excellent', color: '#FF6700' },
+  good: { label: '良好', cls: 'rb-good', color: '#22C55E' },
+  qualified: { label: '合格', cls: 'rb-qualified', color: '#F59E0B' },
+  poor: { label: '差', cls: 'rb-poor', color: '#EF4444' }
+};
+
+const ORDER = ['excellent', 'good', 'qualified', 'poor'];
+const C = ['var(--txt3)', '#EF4444', '#F59E0B', '#22C55E', '#FF6700', '#FFD700'];
+const RADAR_COLORS = [
+  { bg: 'rgba(255,103,0,.2)', border: '#FF8533' },
+  { bg: 'rgba(255,103,0,.15)', border: '#FF6700' },
+  { bg: 'rgba(255,179,0,.15)', border: '#F59E0B' },
+  { bg: 'rgba(34,197,94,.15)', border: '#22C55E' },
+  { bg: 'rgba(239,68,68,.15)', border: '#EF4444' }
+];
+
+const R = 26, CIRC = 2 * Math.PI * R;
+let batchItems = [];
+let batchIdCounter = 0;
+let imageBase64 = { real: null, fake: null };
+let scores = {}, reasons = {}, confidences = {};
+let lastResult = null, lightList = [];
+let activeBatchId = null;
+let currentReportGroupId = null;
+let radarChartInstance = null;
+
+// ═══════════════════════════════════════════════
+// Guide Page
+// ═══════════════════════════════════════════════
+function goBackToGuide() {
+  document.getElementById("appWrap").classList.remove("visible");
+  setTimeout(() => {
+    document.getElementById("guidePage").classList.remove("hidden");
+  }, 100);
+}
+
+function enterApp() {
+  document.getElementById('guidePage').classList.add('hidden');
+  document.getElementById('appWrap').classList.add('visible');
+}
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active')});
+  document.querySelectorAll('.nav-tab').forEach(function(t){t.classList.remove('active')});
+  var panel = document.getElementById('panel-' + name);
+  if (panel) panel.classList.add('active');
+  var tabs = document.querySelectorAll('.nav-tab');
+  var map = {upload:0, report:1, compare:2, export:3};
+  if (tabs[map[name]]) tabs[map[name]].classList.add('active');
+  if (name === 'export') renderExportList();
+  if (name === 'compare') renderCmpAvail();
+}
+function viewGroupResult(id) {
+  var item = batchItems.find(function(b){return b.id===id});
+  if (!item || !item.result) return;
+  currentReportGroupId = id;
+  renderGroupReport(item.result);
+  switchTab('report');
+}
+function renderGroupSelector() {
+  var sel = document.getElementById('groupSelector');
+  if (!sel) return;
+  var evaluated = batchItems.filter(function(b){return b.result});
+  if (evaluated.length <= 1) { sel.innerHTML = ''; return; }
+  sel.innerHTML = evaluated.map(function(item) {
+    var r = item.result;
+    var cls = currentReportGroupId === item.id ? 'active' : '';
+    var idx = batchItems.indexOf(item) + 1;
+    return '<button class="group-btn ' + cls + '" onclick="viewGroupResult(' + item.id + ')">' +
+      '<span class="g-total" style="color:' + RATING[r.rating].color + '">' + r.total + '</span>' +
+      escapeHtml(item.name || ('第' + idx + '组')) + '</button>';
+  }).join('');
+}
+function renderGroupReport(r) {
+  var isHigh = r.type === 'highbeam';
+  var active = METRICS.filter(function(m){return (isHigh?m.wt.high:m.wt.low)>0 && r.scores[m.key]});
+  var w = {};
+  METRICS.forEach(function(m){w[m.key]=isHigh?m.wt.high:m.wt.low});
+  var totalMetrics = METRICS.filter(function(m){return (isHigh?m.wt.high:m.wt.low)>0}).length;
+  renderReport(r, active, w, { coverage: active.length/totalMetrics, totalMetrics: totalMetrics, scored: active.length });
+  renderGroupSelector();
+}
+function toggleDetail(btn) {
+  btn.classList.toggle('open');
+  var panel = btn.nextElementSibling;
+  if (panel && panel.classList.contains('detail-panel')) panel.classList.toggle('show');
+}
+
+
+// ═══════════════════════════════════════════════
+// Batch Upload
+// ═══════════════════════════════════════════════
+function addBatchItem() {
+  const id = ++batchIdCounter;
+  batchItems.push({ id, name: '', type: 'lowbeam', real: null, fake: null, realBase64: null, fakeBase64: null, result: null });
+  renderBatch();
+}
+
+function removeBatchItem(id) {
+  batchItems = batchItems.filter(b => b.id !== id);
+  renderBatch();
+}
+
+function clearBatch() {
+  batchItems = [];
+  renderBatch();
+}
+
+function updateBatchInfo(id, field, value) {
+  const item = batchItems.find(b => b.id === id);
+  if (item) { item[field] = value; saveToStorage(); }
+}
+
+function renderBatch() {
+  const list = document.getElementById('batchList');
+  if (batchItems.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--txt3);font-size:13px">点击「添加一组」开始上传灯具图片</div>';
+    updateActiveImages();
+    return;
+  }
+  list.innerHTML = batchItems.map((item, idx) => `
+    <div class="batch-item ${activeBatchId===item.id?'active':''}" data-id="${item.id}">
+      <div class="batch-item-header">
+        <div class="batch-item-label">
+          <span class="num">${idx + 1}</span>
+          第 ${idx + 1} 组${item.result ? ' <span class="batch-result-badge" style="color:'+RATING[item.result.rating].color+'">'+item.result.total+'分 '+RATING[item.result.rating].label+'</span>' + (item.result.partialWarning ? ' <span style="font-size:11px;color:#D97706;background:rgba(217,119,6,.1);padding:2px 8px;border-radius:6px">⚠️ 部分完成</span>' : '') : ''}
+        </div>
+        <div class="batch-item-actions">
+          <button class="btn btn-sm ${activeBatchId===item.id?'btn-pri':'btn-out'}" onclick="selectBatch(${item.id})">${activeBatchId===item.id?'已选中':'选中此组'}</button>
+          ${item.result ? '<button class="btn btn-out btn-sm" onclick="viewGroupResult('+item.id+')">查看报告</button>' : ''}
+          <button class="btn btn-danger btn-sm" onclick="removeBatchItem(${item.id})">移除</button>
+        </div>
+      </div>
+      <div class="batch-info-row">
+        <label>灯具名称</label>
+        <input class="inp" value="${escapeHtml(item.name || '')}" placeholder="例：车型A Ultra 近光灯 A样品" onchange="updateBatchInfo(${item.id},'name',this.value)">
+        <label>灯型</label>
+        <select class="inp" onchange="updateBatchInfo(${item.id},'type',this.value)">
+          <option value="lowbeam" ${item.type==='lowbeam'?'selected':''}>近光灯</option>
+          <option value="highbeam" ${item.type==='highbeam'?'selected':''}>远光灯</option>
+        </select>
+      </div>
+      <div class="upload-grid">
+        <div class="upload-zone ${item.realBase64 ? 'has-image' : ''}" id="zone-real-${item.id}"
+             onclick="document.getElementById('file-real-${item.id}').click()"
+             ondragover="event.preventDefault();this.classList.add('dragover')"
+             ondragleave="this.classList.remove('dragover')"
+             ondrop="handleBatchDrop(event,${item.id},'real')">
+          <svg width="44" height="44" viewBox="0 0 48 48" fill="none" ${item.realBase64 ? 'style="display:none"' : ''}><rect x="6" y="8" width="36" height="32" rx="4" stroke="#FF6700" stroke-width="2"/><circle cx="18" cy="20" r="4" stroke="#FF6700" stroke-width="2"/><path d="M6 34l10-10 8 8 6-6 12 12" stroke="#FF6700" stroke-width="2" stroke-linejoin="round"/></svg>
+          <div class="uz-label" ${item.realBase64 ? 'style="display:none"' : ''}>灯光实物图</div>
+          <div class="uz-hint" ${item.realBase64 ? 'style="display:none"' : ''}>评价：均匀性 · 下边界 · 杂散光</div>
+          <div class="uz-hint" ${item.realBase64 ? 'style="display:none"' : ''} style="opacity:.5">点击或拖拽上传</div>
+          ${item.realBase64 ? '<img src="' + item.realBase64 + '" alt="灯光实物图">' : ''}
+          <input type="file" id="file-real-${item.id}" accept="image/*" onchange="handleBatchFile(this,${item.id},'real')">
+        </div>
+        <div class="upload-zone ${item.fakeBase64 ? 'has-image' : ''}" id="zone-fake-${item.id}"
+             onclick="document.getElementById('file-fake-${item.id}').click()"
+             ondragover="event.preventDefault();this.classList.add('dragover')"
+             ondragleave="this.classList.remove('dragover')"
+             ondrop="handleBatchDrop(event,${item.id},'fake')">
+          <svg width="44" height="44" viewBox="0 0 48 48" fill="none" ${item.fakeBase64 ? 'style="display:none"' : ''}><rect x="6" y="6" width="36" height="36" rx="4" stroke="#FF6700" stroke-width="2"/><path d="M14 38V26M20 38V20M26 38V30M34 38V14" stroke="#FF6700" stroke-width="2.5" stroke-linecap="round"/></svg>
+          <div class="uz-label" ${item.fakeBase64 ? 'style="display:none"' : ''}>鸟瞰伪彩图</div>
+          <div class="uz-hint" ${item.fakeBase64 ? 'style="display:none"' : ''}>评价：宽度 · 远度</div>
+          <div class="uz-hint" ${item.fakeBase64 ? 'style="display:none"' : ''} style="opacity:.5">点击或拖拽上传</div>
+          ${item.fakeBase64 ? '<img src="' + item.fakeBase64 + '" alt="鸟瞰伪彩图">' : ''}
+          <input type="file" id="file-fake-${item.id}" accept="image/*" onchange="handleBatchFile(this,${item.id},'fake')">
+        </div>
+      </div>
+    </div>
+  `).join('');
+  updateActiveImages();
+  saveToStorage();
+}
+
+function handleBatchFile(el, id, type) {
+  if (el.files[0]) processBatchFile(el.files[0], id, type);
+}
+
+function handleBatchDrop(e, id, type) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('dragover');
+  if (e.dataTransfer.files[0]?.type.startsWith('image/')) {
+    processBatchFile(e.dataTransfer.files[0], id, type);
+  }
+}
+
+function compressImage(dataUrl, maxW, quality) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      var c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = function() { resolve(dataUrl); };
+    img.src = dataUrl;
+  });
+}
+
+function processBatchFile(file, id, type) {
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    var result = e.target.result;
+    if (result.length > 300000) {
+      result = await compressImage(result, 1920, 0.7);
+    }
+    const item = batchItems.find(b => b.id === id);
+    if (item) {
+      item[type + 'Base64'] = result;
+      renderBatch();
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function selectBatch(id) {
+  activeBatchId = id;
+  renderBatch();
+  saveToStorage();
+}
+
+function applyBatch(id) {
+  const item = batchItems.find(b => b.id === id);
+  if (!item) return;
+  imageBase64.real = item.realBase64;
+  imageBase64.fake = item.fakeBase64;
+  activeBatchId = id;
+  scores = {};
+  reasons = {};
+  confidences = {};
+  initMeters();
+  updateBtn();
+
+}
+
+function updateActiveImages() {
+  const activeItem = batchItems.find(b => b.id === activeBatchId && (b.realBase64 || b.fakeBase64));
+  const fallback = batchItems.find(b => b.realBase64 || b.fakeBase64);
+  const item = activeItem || fallback;
+  if (item) {
+    if (!activeBatchId) activeBatchId = item.id;
+    imageBase64.real = item.realBase64;
+    imageBase64.fake = item.fakeBase64;
+  } else {
+    imageBase64.real = null;
+    imageBase64.fake = null;
+  }
+  updateBtn();
+}
+
+// ═══════════════════════════════════════════════
+// Gauge / Meters
+// ═══════════════════════════════════════════════
+function gaugeHTML(score, id) {
+  const pct = score > 0 ? score / 5 : 0;
+  const off = CIRC * (1 - pct);
+  const cls = score > 0 ? 's' + score : '';
+  return `<div class="gauge">
+    <svg width="64" height="64" viewBox="0 0 64 64">
+      <circle class="gauge-bg" cx="32" cy="32" r="${R}"/>
+      <circle class="gauge-fg ${cls}" cx="32" cy="32" r="${R}" stroke-dasharray="${CIRC}" stroke-dashoffset="${score > 0 ? off : CIRC}" id="gf-${id}"/>
+    </svg>
+    <div class="gauge-val ${cls}" id="gv-${id}">${score > 0 ? score : '—'}</div>
+  </div>`;
+}
+
+function initMeters() {
+  const activeItem = batchItems.find(b => b.id === activeBatchId) || batchItems[0];
+  const isHigh = activeItem ? activeItem.type === 'highbeam' : false;
+
+  const nearBeam = METRICS.filter(m => m.wt.low > 0);
+  const farBeam  = METRICS.filter(m => m.wt.high > 0);
+
+  function renderCriteria(m, prefix) {
+    const crit = CRITERIA[m.key];
+    if (!crit) return '';
+    const arr = crit[prefix] || crit[Object.keys(crit)[0]];
+    if (!arr || !arr.length) return '';
+    const rows = arr.map(c =>
+      `<div class="crit-row"><span class="crit-score s${c.s}">${c.s}</span><span class="crit-desc">${c.d}</span></div>`
+    ).join('');
+    return `<div class="crit-toggle" onclick="this.parentElement.classList.toggle('crit-open')">评分标准</div>
+            <div class="crit-body">${rows}</div>`;
+  }
+
+  function renderGroup(title, metrics, prefix) {
+    return `<div class="group-title">${title}</div><div class="meter-grid">` +
+      metrics.map(m => {
+        const w = m.wt[prefix];
+        return `<div class="meter-card" id="mc-${prefix}-${m.key}">
+          <div class="mc-name">${m.icon} ${m.name}</div>
+          <div class="mc-wt">权重 ${w}%</div>
+          ${gaugeHTML(0, prefix + '-' + m.key)}
+          ${renderCriteria(m, prefix)}
+          <div class="mc-reason" id="mr-${prefix}-${m.key}"></div>
+          <div class="mc-status" id="mt-${prefix}-${m.key}">等待上传</div>
+        </div>`;
+      }).join('') + '</div>';
+  }
+
+  const grid = document.getElementById('meterGrid');
+  grid.innerHTML =
+    renderGroup('近光灯指标（10项）', nearBeam, 'low') +
+    renderGroup('远光灯指标（6项）', farBeam, 'high');
+}
+
+function onTypeChange() {
+  initMeters();
+  scores = {};
+  reasons = {};
+  confidences = {};
+  updateBtn();
+}
+
+initMeters();
+if (!loadFromStorage()) { addBatchItem(); } else { renderBatch(); initMeters(); renderGroupSelector(); renderExportList(); if (lightList.length >= 2) { renderCmp(); renderRadar(); } }
+
+// ═══════════════════════════════════════════════
+// Analysis
+// ═══════════════════════════════════════════════
+function updateBtn() {
+  const hasImg = imageBase64.real || imageBase64.fake;
+  document.getElementById('btnAnalyze').disabled = !hasImg;
+  const hasAnyBatch = batchItems.some(b => b.realBase64 || b.fakeBase64);
+  document.getElementById('btnAnalyzeAll').disabled = !hasAnyBatch;
+}
+
+async function analyzeAll() {
+  // Auto-apply active batch
+  const activeItem = batchItems.find(b => b.id === activeBatchId) || batchItems.find(b => b.realBase64 || b.fakeBase64);
+  if (!activeItem) { alert('请先上传图片'); return; }
+  if (activeBatchId !== activeItem.id) selectBatch(activeItem.id);
+  applyBatch(activeItem.id);
+
+  const isHigh = activeItem.type === 'highbeam';
+  const metricsToAnalyze = METRICS.filter(m => {
+    const w = isHigh ? m.wt.high : m.wt.low;
+    return w > 0 && imageBase64[m.type];
+  });
+  if (!metricsToAnalyze.length) { alert('请先上传图片'); return; }
+
+  document.getElementById('btnAnalyze').disabled = true;
+
+  // Show progress bar
+  const total = metricsToAnalyze.length;
+  let done = 0;
+  const wrap = document.getElementById('progressWrap');
+  const fill = document.getElementById('progressFill');
+  const text = document.getElementById('progressText');
+  wrap.classList.add('show');
+  fill.style.width = '0%';
+  text.textContent = '0 / ' + total;
+
+  // Analyze sequentially for visible progress
+  for (const m of metricsToAnalyze) {
+    await analyzeOne(m);
+    done++;
+    fill.style.width = (done / total * 100) + '%';
+    text.textContent = done + ' / ' + total;
+  }
+
+  const scoredCount = METRICS.filter(m => {
+    const w = isHigh ? m.wt.high : m.wt.low;
+    return w > 0 && scores[m.key];
+  }).length;
+  if (scoredCount > 0) {
+    fill.style.background = scoredCount === metricsToAnalyze.length
+      ? 'linear-gradient(90deg, var(--ok), var(--cyan))'
+      : 'linear-gradient(90deg, var(--warn), var(--pri))';
+    text.textContent = scoredCount === metricsToAnalyze.length ? '完成' : '部分完成 (' + scoredCount + '/' + metricsToAnalyze.length + ')';
+    const ok = buildReport();
+    if (ok) {
+      activeItem.result = { ...lastResult };
+      currentReportGroupId = activeItem.id;
+    } else {
+      fill.style.background = 'linear-gradient(90deg, var(--warn), var(--pri))';
+      text.textContent = '评分不完整，未生成报告';
+    }
+    renderBatch();
+    renderGroupSelector();
+    saveToStorage();
+  }
+
+  document.getElementById('btnAnalyze').disabled = false;
+}
+
+async function analyzeAllBatch() {
+  const validItems = batchItems.filter(b => b.realBase64 || b.fakeBase64);
+  if (!validItems.length) { alert('请先上传图片'); return; }
+
+  document.getElementById('btnAnalyze').disabled = true;
+  document.getElementById('btnAnalyzeAll').disabled = true;
+
+  try {
+  const wrap = document.getElementById('progressWrap');
+  const fill = document.getElementById('progressFill');
+  const text = document.getElementById('progressText');
+  wrap.classList.add('show');
+
+  lightList = [];
+  let done = 0;
+  const totalCount = validItems.reduce((sum, item) => {
+    const isH = item.type === 'highbeam';
+    return sum + METRICS.filter(m => (isH ? m.wt.high : m.wt.low) > 0).length;
+  }, 0);
+
+  for (const item of validItems) {
+    activeBatchId = item.id;
+    imageBase64.real = item.realBase64;
+    imageBase64.fake = item.fakeBase64;
+    scores = {};
+    reasons = {};
+    confidences = {};
+    initMeters();
+    updateBtn();
+
+    const isHigh = item.type === 'highbeam';
+    const metricsToAnalyze = METRICS.filter(m => {
+      const w = isHigh ? m.wt.high : m.wt.low;
+      return w > 0 && imageBase64[m.type];
+    });
+
+    let _hasError = false;
+    for (const m of metricsToAnalyze) {
+      if (!(await analyzeOne(m))) _hasError = true;
+      done++;
+      fill.style.width = (done / totalCount * 100) + '%';
+      text.textContent = (item.name || '第' + (validItems.indexOf(item) + 1) + '组') + ' · ' + done + '/' + totalCount;
+    }
+
+    const allDone = METRICS.every(m => {
+      const w = isHigh ? m.wt.high : m.wt.low;
+      return w === 0 || !!scores[m.key];
+    });
+    if (allDone) {
+      const ok = buildReport();
+      if (ok) item.result = { ...lastResult };
+    }
+
+    if (allDone && lastResult) {
+      const idx = lightList.findIndex(l => l.name === lastResult.name);
+      if (idx >= 0) lightList[idx] = { ...lastResult };
+      else lightList.push({ ...lastResult });
+    }
+  }
+
+  fill.style.background = 'linear-gradient(90deg, var(--ok), var(--cyan))';
+  text.textContent = '全部完成 · ' + validItems.length + ' 组';
+
+  currentReportGroupId = validItems[validItems.length - 1]?.id || null;
+  renderBatch();
+  renderChips();
+  renderGroupSelector();
+  if (lightList.length >= 2) {
+    renderCmp();
+    renderRadar();
+  }
+
+  saveToStorage();
+  } catch (err) { console.error('analyzeAllBatch error:', err); } finally {
+    document.getElementById('btnAnalyze').disabled = false;
+    document.getElementById('btnAnalyzeAll').disabled = false;
+  }
+}
+
+async function analyzeOne(metric) {
+  const _pfx = (batchItems.find(b => b.id === activeBatchId) || batchItems[0] || {}).type === 'highbeam' ? 'high' : 'low';
+  const card = document.getElementById('mc-' + _pfx + '-' + metric.key);
+  const status = document.getElementById('mt-' + _pfx + '-' + metric.key);
+  if (!card || !status) return false;
+  card.classList.add('analyzing');
+  card.classList.remove('done');
+  status.textContent = 'AI 分析中...';
+  status.className = 'mc-status';
+  try {
+    // 获取当前灯型对应的评分标准文本，避免服务器端混淆近光/远光
+    const _lt = (batchItems.find(b => b.id === activeBatchId) || {}).type || 'lowbeam';
+    const _ltKey = _lt === 'highbeam' ? 'high' : 'low';
+    const _crit = CRITERIA[metric.key];
+    const _critArr = _crit ? (_crit[_ltKey] || _crit[Object.keys(_crit)[0]]) : null;
+    const _criteriaText = _critArr ? _critArr.map(c => c.s + '分: ' + c.d).join('\n') : '';
+    var ctrl = new AbortController();
+    var timer = setTimeout(function() { ctrl.abort(); }, 30000);
+    var resp;
+    try {
+      resp = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: imageBase64[metric.type],
+          metric: metric.key,
+          lightType: _lt,
+          criteria: _criteriaText
+        }),
+        signal: ctrl.signal
+      });
+    } finally { clearTimeout(timer); }
+    if (!resp.ok) { status.textContent = 'HTTP ' + resp.status; status.style.color = '#EF4444'; card.classList.remove('analyzing'); return false; }
+    const data = await resp.json();
+    if (data.error) { status.textContent = data.error; status.style.color = '#EF4444'; card.classList.remove('analyzing'); return false; }
+    if (typeof data.score !== 'number' || data.score < 1 || data.score > 5) { status.textContent = '数据无效'; status.style.color = '#EF4444'; card.classList.remove('analyzing'); return false; }
+    scores[metric.key] = data.score;
+    reasons[metric.key] = data.reason || '';
+    confidences[metric.key] = data.confidence || 50;
+    const gf = document.getElementById('gf-' + _pfx + '-' + metric.key);
+    const gv = document.getElementById('gv-' + _pfx + '-' + metric.key);
+    const off = CIRC * (1 - data.score / 5);
+    if (gf) { gf.setAttribute('stroke-dashoffset', off); gf.className.baseVal = 'gauge-fg s' + data.score; }
+    if (gv) { gv.textContent = data.score; gv.className = 'gauge-val s' + data.score; }
+    const mr = document.getElementById('mr-' + _pfx + '-' + metric.key);
+    if (mr) mr.textContent = data.reason || '';
+    var conf = data.confidence || 50;
+    var confColor = conf >= 80 ? 'var(--ok)' : conf >= 50 ? 'var(--warn)' : 'var(--bad)';
+    status.innerHTML = '已完成 · <span style="color:' + confColor + '">置信度 ' + conf + '%</span>';
+    status.className = 'mc-status done';
+    card.classList.remove('analyzing'); card.classList.add('done');
+    const overlay = document.getElementById('overlay-' + metric.type);
+    if (overlay) {
+      const _activeItem = batchItems.find(b => b.id === activeBatchId) || batchItems[0];
+      const _isHigh = _activeItem ? _activeItem.type === 'highbeam' : false;
+      const sibs = METRICS.filter(m => m.type === metric.type && m.wt[_isHigh ? 'high' : 'low'] > 0);
+      if (sibs.every(m => scores[m.key])) {
+        overlay.classList.add('show');
+        overlay.textContent = sibs.map(m => m.name + ': ' + scores[m.key] + '分').join('  ·  ');
+      }
+    }
+    return true;
+  } catch (err) {
+    status.textContent = '请求失败'; status.style.color = '#EF4444'; card.classList.remove('analyzing');
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// Report
+// ═══════════════════════════════════════════════
+function buildReport() {
+  const activeItem = batchItems.find(b => b.id === activeBatchId) || batchItems[0];
+  const isHigh = activeItem ? activeItem.type === 'highbeam' : false;
+  const active = METRICS.filter(m => {
+    const w = isHigh ? m.wt.high : m.wt.low;
+    return w > 0 && scores[m.key];
+  });
+
+  const w = {};
+  METRICS.forEach(m => { w[m.key] = isHigh ? m.wt.high : m.wt.low; });
+  const tw = Object.values(w).reduce((a, b) => a + b, 0);
+  let total = 0;
+  active.forEach(m => { total += scores[m.key] * w[m.key] / tw; });
+  total = Math.round(total * 100) / 100;
+
+  // 覆盖率：已评分指标数 vs 应评分指标总数
+  const totalMetrics = METRICS.filter(m => (isHigh ? m.wt.high : m.wt.low) > 0).length;
+  const coverage = active.length / totalMetrics;
+
+  // 禁止不完整出报告：所有应评指标必须全部有分，否则不生成报告
+  if (coverage < 1) {
+    const missing = METRICS.filter(m => (isHigh ? m.wt.high : m.wt.low) > 0 && !scores[m.key]).map(m => m.name);
+    alert('评分不完整，暂不能生成报告。\n还差 ' + missing.length + ' 项：' + missing.join('、') + '\n请补齐对应图片后重新评分。');
+    return false;
+  }
+
+  const P = [];
+  if (!isHigh) {
+    // ── 近光灯专用惩罚（一票降级，不再一票否决） ──
+    if (scores.strayLight === 1) P.push({ l: 'warn', t: '杂散光 = 1 → 整灯最高「合格」' });
+    if (scores.leftWidth === 1) P.push({ l: 'warn', t: '左侧宽度 = 1 → 整灯最高「合格」' });
+    if (scores.nearField === 1) P.push({ l: 'warn', t: '近场暗区 = 1 → 整灯最高「合格」' });
+    if (scores.uniformity <= 2) P.push({ l: 'warn', t: '均匀性 ≤ 2 → 整灯最高「合格」' });
+    if (scores.leftWidth <= 2 && scores.rightWidth <= 2) P.push({ l: 'warn', t: '左/右宽度 ≤ 2 → 整灯最高「合格」' });
+    if (scores.cutoffLine <= 2) P.push({ l: 'tag', t: '下边界整齐度 ≤ 2 → 整灯最高「良好」' });
+  } else {
+    // ── 远光灯专用惩罚（一票降级） ──
+    if (scores.distance === 1) P.push({ l: 'warn', t: '远度 = 1 → 整灯最高「合格」' });
+    if (scores.uniformity === 1) P.push({ l: 'warn', t: '均匀性 = 1 → 整灯最高「合格」' });
+    if (scores.leftIlluminance <= 2 && scores.rightIlluminance <= 2) P.push({ l: 'warn', t: '左/右照度(90m) ≤ 2 → 整灯最高「合格」' });
+  }
+
+  const as = active.map(m => scores[m.key]);
+  if (as.filter(s => s === 3).length / as.length >= .7) P.push({ l: 'review', t: '中央趋势偏差：3分占比 ≥ 70%，建议重审' });
+  if (!as.includes(1) && !as.includes(5)) P.push({ l: 'review', t: '无1分且无5分，建议拉开档位' });
+
+  let rating;
+  const ro = { excellent: 4, good: 3, qualified: 2, poor: 1 };
+  if (P.some(p => p.l === 'block')) {
+    rating = 'poor';
+  } else {
+    // 封顶取「最严格」一档：命中多项封顶规则时以最严格者为准，不被后写规则放宽
+    let cap = 'excellent';
+    if (P.some(p => p.l === 'tag') && ro['good'] < ro[cap]) cap = 'good';
+    if (P.some(p => p.l === 'warn') && ro['qualified'] < ro[cap]) cap = 'qualified';
+    if (total >= 4.2 && !as.some(s => s <= 2)) rating = 'excellent';
+    else if (total >= 3.5 && !as.includes(1)) rating = 'good';
+    else if (total >= 2.5 && !as.includes(1)) rating = 'qualified';
+    else rating = 'poor';
+    if (ro[rating] > ro[cap]) rating = cap;
+  }
+
+  lastResult = {
+    name: (activeItem && activeItem.name) || '未命名',
+    type: isHigh ? 'highbeam' : 'lowbeam',
+    scores: { ...scores },
+    reasons: { ...reasons },
+    confidences: { ...confidences },
+    total, rating, penalties: P
+  };
+
+  renderReport(lastResult, active, w, { coverage, totalMetrics, scored: active.length });
+  renderGroupSelector();
+  return true;
+}
+
+function renderReport(r, active, w, covInfo) {
+  // report/compare/export cards now visible via tab-panel.active CSS
+
+  const incomplete = covInfo && covInfo.coverage < 1;
+  const ri = RATING[incomplete ? 'qualified' : r.rating];
+  const ringPct = r.total / 5;
+  const ringCirc = 2 * Math.PI * 48;
+  const ringOff = ringCirc * (1 - ringPct);
+
+  let html = `<div class="report-header">
+    <div class="total-ring">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        <circle class="tr-bg" cx="60" cy="60" r="48"/>
+        <circle class="tr-fg" cx="60" cy="60" r="48" stroke="url(#ring-grad)" stroke-dasharray="${ringCirc}" stroke-dashoffset="${ringOff}"/>
+      </svg>
+      <div class="tr-val">
+        <span class="tr-num">${r.total}</span>
+        <span class="tr-label">加权总分</span>
+      </div>
+    </div>
+    <div>
+      <span class="rating-badge ${ri.cls}">${ri.label}</span>
+      <div class="report-meta">${escapeHtml(r.name)} · ${r.type === 'highbeam' ? '远光灯' : '近光灯'} · ${new Date().toLocaleDateString('zh-CN')}</div>
+    </div>
+  </div>`;
+
+  if (incomplete) {
+    const allMetrics = METRICS.filter(m => (r.type === 'highbeam' ? m.wt.high : m.wt.low) > 0);
+    const missing = allMetrics.filter(m => !r.scores[m.key]);
+    html += '<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:12px 16px;margin:12px 0">';
+    html += '<div style="font-weight:700;color:#92400E;margin-bottom:6px">⚠️ 数据不完整（' + covInfo.scored + '/' + covInfo.totalMetrics + ' 项指标已评分）</div>';
+    html += '<div style="font-size:13px;color:#78350F">以下指标未评分，当前加权分仅基于已评分项：<br>' + missing.map(m => m.name).join('、') + '</div>';
+    html += '</div>';
+  }
+
+  html += '<div style="margin:18px 0">';
+  active.forEach(m => {
+    const s = r.scores[m.key];
+    html += `<div class="bar-row">
+      <span class="bar-label">${m.name}（${w[m.key]}%）</span>
+      <div class="bar-track"><div class="bar-fill s${s}" style="width:${s / 5 * 100}%"></div></div>
+      <span class="bar-score" style="color:${C[s]}">${s}</span>
+    </div>`;
+  });
+  html += '</div>';
+
+  html += '<table class="score-table"><tr><th>指标</th><th>权重</th><th>评分</th><th>加权</th></tr>';
+  active.forEach(m => {
+    const s = r.scores[m.key];
+    const ws = s * w[m.key] / 100;
+    html += '<tr><td style="text-align:left;font-weight:500">' + m.name + '</td><td>' + w[m.key] + '%</td><td style="color:' + C[s] + ';font-weight:700;font-size:16px">' + s + '</td><td>' + ws.toFixed(2) + '</td></tr>';
+  });
+  html += '<tr style="font-weight:700;background:rgba(255,103,0,.06)"><td style="text-align:left">合计</td><td></td><td></td><td>' + r.total + '</td></tr></table>';
+  html += '<button class="detail-toggle" onclick="toggleDetail(this)"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M7 9.5L2 4.5h10z"/></svg> 查看评分细则与理由</button>';
+  html += '<div class="detail-panel" id="detailPanel">';
+  html += '<table class="score-table"><tr><th>指标</th><th>评分</th><th>置信度</th><th>AI 分析理由</th><th>评分标准</th></tr>';
+  const _type = r.type === 'highbeam' ? 'high' : 'low';
+  active.forEach(m => {
+    const s = r.scores[m.key];
+    const conf = (r.confidences && r.confidences[m.key]) || 50;
+    const confColor = conf >= 80 ? 'var(--ok)' : conf >= 50 ? 'var(--warn)' : 'var(--bad)';
+    const crit = CRITERIA[m.key] && (CRITERIA[m.key][_type] || CRITERIA[m.key][Object.keys(CRITERIA[m.key])[0]]);
+    let critHtml = '—';
+    if (crit) {
+      const matched = crit.find(c => c.s === s);
+      critHtml = matched ? s + '分：' + escapeHtml(matched.d) : s + '分';
+    }
+    html += '<tr><td style="text-align:left;font-weight:500">' + m.name + '</td><td style="color:' + C[s] + ';font-weight:700">' + s + '</td><td style="color:' + confColor + ';font-weight:600">' + conf + '%</td><td style="text-align:left;font-size:11px;color:var(--txt2);line-height:1.5">' + escapeHtml(r.reasons[m.key] || '—') + '</td><td style="text-align:left;font-size:11px;color:var(--txt3);line-height:1.5">' + critHtml + '</td></tr>';
+  });
+  html += '</table></div>';
+
+  r.penalties.forEach(p => {
+    const cls = p.l === 'warn' ? 'penalty-warn' : 'penalty-review';
+    html += `<div class="penalty-box ${cls}"><strong>!</strong> ${p.t}</div>`;
+  });
+
+  // Collapsible penalty rules section
+  html += '<div style="margin-top:20px">';
+  html += '<button class="detail-toggle" onclick="toggleDetail(this)" style="margin-top:0"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M7 9.5L2 4.5h10z"/></svg> 查看防失真惩罚规则</button>';
+  html += '<div class="detail-panel" id="penaltyRulesPanel">';
+  html += '<div style="background:var(--card2);border:1px solid var(--bdr);border-radius:12px;padding:20px;margin-top:10px;font-size:12px;line-height:1.9">';
+  html += '<div style="font-weight:700;color:var(--txt);margin-bottom:10px;font-size:13px">近光灯惩罚规则</div>';
+  html += '<div style="margin-bottom:6px"><span class="penalty-box penalty-warn" style="display:inline-flex;padding:4px 12px;font-size:11px;margin-right:8px">一票降级</span>杂散光 = 1 → 整灯最高「合格」</div>';
+  html += '<div style="margin-bottom:6px"><span class="penalty-box penalty-warn" style="display:inline-flex;padding:4px 12px;font-size:11px;margin-right:8px">一票降级</span>宽度(左/右) = 1 → 整灯最高「合格」</div>';
+  html += '<div style="margin-bottom:6px"><span class="penalty-box penalty-warn" style="display:inline-flex;padding:4px 12px;font-size:11px;margin-right:8px">一票降级</span>近场暗区 = 1 → 整灯最高「合格」</div>';
+  html += '<div style="margin-bottom:6px"><span class="penalty-box penalty-warn" style="display:inline-flex;padding:4px 12px;font-size:11px;margin-right:8px">等级封顶</span>均匀性 ≤ 2 → 整灯最高「合格」</div>';
+  html += '<div style="margin-bottom:6px"><span class="penalty-box penalty-warn" style="display:inline-flex;padding:4px 12px;font-size:11px;margin-right:8px">等级封顶</span>左/右宽度 ≤ 2 → 整灯最高「合格」</div>';
+  html += '<div style="margin-bottom:14px"><span class="penalty-box penalty-warn" style="display:inline-flex;padding:4px 12px;font-size:11px;margin-right:8px">等级封顶</span>下边界整齐度 ≤ 2 → 整灯最高「良好」</div>';
+  html += '<div style="font-weight:700;color:var(--txt);margin-bottom:10px;font-size:13px">远光灯惩罚规则</div>';
+  html += '<div style="margin-bottom:6px"><span class="penalty-box penalty-warn" style="display:inline-flex;padding:4px 12px;font-size:11px;margin-right:8px">一票降级</span>远度 = 1 → 整灯最高「合格」</div>';
+  html += '<div style="margin-bottom:6px"><span class="penalty-box penalty-warn" style="display:inline-flex;padding:4px 12px;font-size:11px;margin-right:8px">等级封顶</span>左/右照度(90m内) ≤ 2 → 整灯最高「合格」</div>';
+  html += '<div style="margin-bottom:14px"><span class="penalty-box penalty-warn" style="display:inline-flex;padding:4px 12px;font-size:11px;margin-right:8px">等级封顶</span>均匀性 = 1 → 整灯最高「合格」</div>';
+  html += '<div style="font-weight:700;color:var(--txt);margin-bottom:10px;font-size:13px">中央趋势审查（通用）</div>';
+  html += '<div style="margin-bottom:6px"><span class="penalty-box penalty-review" style="display:inline-flex;padding:4px 12px;font-size:11px;margin-right:8px">建议重审</span>3分占比 ≥ 70% → 存在中央趋势偏差，评分可能失真</div>';
+  html += '<div><span class="penalty-box penalty-review" style="display:inline-flex;padding:4px 12px;font-size:11px;margin-right:8px">建议重审</span>无1分且无5分 → 建议拉开区分档位</div>';
+  html += '</div></div></div>';
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+// Compare + Radar
+// ═══════════════════════════════════════════════
+function addToList(result) {
+  var r = result || lastResult;
+  if (!r) { alert('请先完成评价'); return; }
+  if (lightList.length > 0 && lightList[0].type !== r.type) {
+    var existingType = lightList[0].type === 'highbeam' ? '远光灯' : '近光灯';
+    var newType = r.type === 'highbeam' ? '远光灯' : '近光灯';
+    alert('对比列表中已有' + existingType + '，无法添加' + newType + '。请先清空列表再添加不同类型灯具。');
+    return;
+  }
+  var idx = lightList.findIndex(function(l){return l.name === r.name && l.total === r.total});
+  if (idx >= 0) lightList[idx] = Object.assign({}, r);
+  else lightList.push(Object.assign({}, r));
+  renderChips();
+  renderCmpAvail();
+  updateCompareView();
+  saveToStorage();
+}
+
+function addGroupToCompare(id) {
+  var item = batchItems.find(function(b){return b.id === id});
+  if (!item || !item.result) { alert('该组未评分，请先完成评分'); return; }
+  addToList(item.result);
+}
+
+function addAllToCompare() {
+  var evaluated = batchItems.filter(function(b){return b.result});
+  if (evaluated.length === 0) { alert('暂无已评分的灯具'); return; }
+  if (lightList.length > 0) {
+    var existingType = lightList[0].type;
+    var mismatch = evaluated.filter(function(item){return item.result.type !== existingType});
+    if (mismatch.length > 0) {
+      var existingName = existingType === 'highbeam' ? '远光灯' : '近光灯';
+      var mismatchNames = mismatch.map(function(item){return item.result.name || '未命名'}).join('、');
+      alert('对比列表中已有' + existingName + '，以下灯具类型不同无法添加：' + mismatchNames + '。请先清空列表。');
+      return;
+    }
+  }
+  evaluated.forEach(function(item) {
+    var exists = lightList.some(function(l){return l.name === item.result.name && l.total === item.result.total});
+    if (!exists) lightList.push(Object.assign({}, item.result));
+  });
+  renderChips();
+  renderCmpAvail();
+  updateCompareView();
+  saveToStorage();
+}
+
+function updateCompareView() {
+  if (lightList.length >= 2) {
+    renderCmp();
+    renderRadar();
+  } else {
+    var cc = document.getElementById('compareContent');
+    if (cc) cc.innerHTML = '<div class="cmp-empty"><div class="cmp-empty-icon">C</div><div>请添加至少 2 盏灯具到对比列表</div></div>';
+    document.getElementById('compareContent').style.display = 'block';
+    var rs = document.getElementById('radarSection');
+    if (rs) rs.style.display = 'none';
+    if (radarChartInstance) { radarChartInstance.destroy(); radarChartInstance = null; }
+  }
+}
+
+function renderCmpAvail() {
+  var el = document.getElementById('cmpAvail');
+  if (!el) return;
+  var evaluated = batchItems.filter(function(b){return b.result && b.result.total != null});
+  if (evaluated.length === 0) {
+    el.innerHTML = '<div class="cmp-empty"><div class="cmp-empty-icon">+</div><div>暂无已评分的灯具，请先完成评分后返回此页</div></div>';
+    return;
+  }
+  var h = '<div class="cmp-avail-title">可用灯具（' + evaluated.length + ' 盏） · 点击添加到对比</div>';
+  h += '<div class="cmp-avail-list">';
+  evaluated.forEach(function(item) {
+    var r = item.result;
+    var ri = RATING[r.rating];
+    var inList = lightList.some(function(l){return l.name === r.name && l.total === r.total});
+    var cls = inList ? ' in-list' : '';
+    h += '<div class="cmp-avail-item' + cls + '" onclick="addGroupToCompare(' + item.id + ')">';
+    h += '<span class="cai-score" style="color:' + ri.color + '">' + r.total + '</span>';
+    h += '<span>' + escapeHtml(item.name || ('\u7b2c' + (batchItems.indexOf(item) + 1) + '\u7ec4')) + '</span>';
+    h += '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:' + (r.type === 'highbeam' ? 'rgba(239,68,68,.08)' : 'rgba(34,197,94,.08)') + ';color:' + (r.type === 'highbeam' ? '#EF4444' : '#22C55E') + '">' + (r.type === 'highbeam' ? '远光' : '近光') + '</span>';
+    h += '<span style="color:' + ri.color + ';font-size:10px">' + ri.label + '</span>';
+    if (inList) h += '<span style="font-size:10px;color:var(--ok)">\u2713</span>';
+    h += '</div>';
+  });
+  h += '</div>';
+  if (evaluated.length >= 2) {
+    h += '<div style="margin-top:10px"><button class="btn btn-pri btn-sm" onclick="addAllToCompare()">\u5168\u9009\u6dfb\u52a0\u5230\u5bf9\u6bd4</button></div>';
+  }
+  el.innerHTML = h;
+}
+
+function removeLight(i) {
+  lightList.splice(i, 1);
+  renderChips();
+  renderCmp();
+  renderRadar();
+  renderCmpAvail();
+  saveToStorage();
+}
+
+function clearList() {
+  lightList = [];
+  renderChips();
+  document.getElementById('compareContent').innerHTML = '';
+  document.getElementById('cmpBarChart').innerHTML = '';
+  var hm = document.getElementById('heatmapWrap'); if (hm) { hm.innerHTML = ''; hm.style.display = 'none'; }
+  document.getElementById('radarSection').style.display = 'none';
+  if (radarChartInstance) { radarChartInstance.destroy(); radarChartInstance = null; }
+  saveToStorage();
+  renderCmpAvail();
+  var cc = document.getElementById('compareContent');
+  if (cc) cc.innerHTML = '<div class="cmp-empty"><div class="cmp-empty-icon">+</div><div>\u8bf7\u6dfb\u52a0\u81f3\u5c11 2 \u76cf\u706f\u5177\u5230\u5bf9\u6bd4\u5217\u8868</div></div>';
+}
+
+function renderChips() {
+  var typeLabel = lightList.length > 0 ? (lightList[0].type === 'highbeam' ? '远光灯' : '近光灯') : '';
+  var h = '';
+  if (typeLabel) h += '<span style="font-size:11px;font-weight:700;color:var(--pri);margin-right:8px">' + typeLabel + '对比</span>';
+  h += lightList.map((l, i) =>
+    `<span class="light-chip">
+      <span style="color:${RATING[l.rating].color};font-weight:700">${l.total}</span>
+      ${escapeHtml(l.name)}
+      <span class="rm" onclick="removeLight(${i})">x</span>
+    </span>`
+  ).join('');
+  document.getElementById('chipList').innerHTML = h;
+}
+
+function renderCmp() {
+  if (lightList.length < 2) {
+    document.getElementById('compareContent').innerHTML = '';
+    document.getElementById('cmpBarChart').innerHTML = '';
+    document.getElementById('heatmapWrap').style.display = 'none';
+    return;
+  }
+  const isHigh = lightList[0].type === 'highbeam';
+  const active = METRICS.filter(m => (isHigh ? m.wt.high : m.wt.low) > 0);
+  const w = {}; METRICS.forEach(m => { w[m.key] = isHigh ? m.wt.high : m.wt.low; });
+  const sorted = [...lightList].sort((a, b) => ORDER.indexOf(a.rating) - ORDER.indexOf(b.rating) || b.total - a.total);
+
+  // ── 1. Summary ranking cards ──
+  let h = '<div class="cmp-summary-cards">';
+  sorted.forEach((l, i) => {
+    const ri = RATING[l.rating];
+    const cls = i === 0 ? ' rank1' : '';
+    h += '<div class="cmp-summary-card' + cls + '">';
+    h += '<div class="csc-rank">' + (i === 0 ? '★ 第1名' : '第' + (i + 1) + '名') + '</div>';
+    h += '<div class="csc-name">' + escapeHtml(l.name) + '</div>';
+    h += '<div class="csc-score" style="color:' + ri.color + '">' + l.total + '</div>';
+    h += '<span class="csc-rating rb-' + l.rating + '">' + ri.label + '</span>';
+    h += '</div>';
+  });
+  h += '</div>';
+
+  // ── 2. Per-metric horizontal bar comparison ──
+  h += '<div id="cmpBarSections">';
+  active.forEach(m => {
+    const scores = lightList.map(l => l.scores[m.key] || 0);
+    const mx = Math.max(...scores);
+    h += '<div class="cmp-bar-group">';
+    h += '<div class="cbg-title">' + m.icon + ' ' + m.name + ' <span>(' + w[m.key] + '%权重)</span></div>';
+    lightList.forEach((l, i) => {
+      const s = l.scores[m.key] || 0;
+      const pct = (s / 5 * 100);
+      const fillCls = s === mx && scores.filter(v => v === mx).length === 1 ? ' best' : '';
+      const scoreColor = C[s];
+      h += '<div class="cmp-bar-item">';
+      h += '<span class="cbi-name">' + escapeHtml(l.name) + '</span>';
+      h += '<div class="cbi-track"><div class="cbi-fill s' + s + fillCls + '" style="width:' + pct + '%">' + s + '</div></div>';
+      h += '<span class="cbi-score" style="color:' + scoreColor + '">' + s + '</span>';
+      h += '</div>';
+    });
+    h += '</div>';
+  });
+  h += '</div>';
+
+  document.getElementById('compareContent').innerHTML = h;
+
+  // HeatmapWrap cleared — per-metric bars in compareContent above
+  document.getElementById('heatmapWrap').style.display = 'none';
+
+  // ── 4. Same-rating warning ──
+  const allR = lightList.map(l => l.rating);
+  if (new Set(allR).size === 1) {
+    document.getElementById('compareContent').innerHTML += '<div class="penalty-box penalty-review" style="margin-top:12px"><strong>i</strong> 所有灯具均落入「' + RATING[allR[0]].label + '」，建议重审拉开区分度</div>';
+  }
+}
+
+function renderRadar() {
+  if (lightList.length < 2) {
+    document.getElementById('radarSection').style.display = 'none';
+    return;
+  }
+  if (typeof Chart === 'undefined') {
+    document.getElementById('radarSection').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('radarSection').style.display = 'block';
+  const isHigh = lightList[0].type === 'highbeam';
+  document.querySelector('#radarSection h4').textContent = '多维雷达图对比 · ' + (isHigh ? '远光灯 6 项' : '近光灯 9 项');
+  const active = METRICS.filter(m => {
+    const w = isHigh ? m.wt.high : m.wt.low;
+    return w > 0;
+  });
+  const labels = active.map(m => m.name);
+
+  const datasets = lightList.map((l, i) => {
+    const color = RADAR_COLORS[i % RADAR_COLORS.length];
+    return {
+      label: l.name,
+      data: active.map(m => l.scores[m.key] || 0),
+      backgroundColor: color.bg,
+      borderColor: color.border,
+      borderWidth: 2,
+      pointBackgroundColor: color.border,
+      pointBorderColor: '#fff',
+      pointBorderWidth: 1,
+      pointRadius: 4,
+      pointHoverRadius: 6
+    };
+  });
+
+  if (radarChartInstance) radarChartInstance.destroy();
+
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  radarChartInstance = new Chart(ctx, {
+    type: 'radar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: '#a0a0c0',
+            font: { family: "'Inter', sans-serif", size: 11, weight: 600 },
+            padding: 16,
+            usePointStyle: true,
+            pointStyleWidth: 12
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(6,6,13,.92)',
+          titleColor: '#1D0601',
+          bodyColor: '#a0a0c0',
+          borderColor: 'rgba(0,0,0,.15)',
+          borderWidth: 1,
+          cornerRadius: 8,
+          titleFont: { family: "'Inter', sans-serif", weight: 700 },
+          bodyFont: { family: "'JetBrains Mono', monospace" },
+          padding: 12,
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.raw} 分`
+          }
+        }
+      },
+      scales: {
+        r: {
+          min: 0,
+          max: 5,
+          ticks: {
+            stepSize: 1,
+            color: '#50506a',
+            backdropColor: 'transparent',
+            font: { family: "'JetBrains Mono', monospace", size: 10 }
+          },
+          grid: {
+            color: 'rgba(255,255,255,.06)',
+            circular: true
+          },
+          angleLines: {
+            color: 'rgba(29,6,1,.08)'
+          },
+          pointLabels: {
+            color: '#5C4A42',
+            font: { family: "'Ubuntu', 'PingFang SC', sans-serif", size: 11, weight: 600 }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// Export
+// ═══════════════════════════════════════════════
+function renderExportList() {
+  var el = document.getElementById('exportList');
+  if (!el) return;
+  var evaluated = batchItems.filter(function(b){return b.result && b.result.total != null});
+  if (evaluated.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:var(--txt3);padding:30px 0;font-size:13px">\u6682\u65e0\u5df2\u8bc4\u5206\u7684\u706f\u5177\uff0c\u8bf7\u5148\u5b8c\u6210\u8bc4\u5206</div>';
+    return;
+  }
+  var h = '<div class="export-list">';
+  h += '<label class="el-select-all"><input type="checkbox" id="exportSelectAll" onchange="toggleExportAll(this)"> \u5168\u9009</label>';
+  evaluated.forEach(function(item) {
+    var r = item.result;
+    var ri = RATING[r.rating];
+    var idx = batchItems.indexOf(item) + 1;
+    h += '<div class="el-item" id="eli-' + item.id + '">';
+    h += '<input type="checkbox" class="el-chk" data-id="' + item.id + '" onchange="toggleExportItem(this)" onclick="event.stopPropagation()">';
+    h += '<div class="el-info">';
+    h += '<div class="el-name">' + escapeHtml(item.name || ('\u7b2c' + idx + '\u7ec4')) + '</div>';
+    h += '<div class="el-meta"><span>' + (r.type === 'highbeam' ? '\u8fdc\u5149' : '\u8fd1\u5149') + '</span><span style="color:' + ri.color + '">' + ri.label + '</span></div>';
+    h += '</div>';
+    h += '<div class="el-score" style="color:' + ri.color + '">' + r.total + '</div>';
+    h += '<div class="el-actions">';
+    h += '<button class="btn btn-pri btn-sm" onclick="doExportSingle(' + item.id + ')">\u5bfc\u51fa</button>';
+    h += '<button class="btn btn-out btn-sm" onclick="doCopySingle(' + item.id + ')">\u590d\u5236</button>';
+    h += '<button class="btn btn-out btn-sm" onclick="doExportJSONSingle(' + item.id + ')">JSON</button>';
+    h += '<button class="btn btn-out btn-sm" onclick="doExportHTMLSingle(' + item.id + ')">\u7f51\u9875</button>';
+    h += '</div></div>';
+  });
+  h += '</div>';
+  h += '<div class="btn-row left"><button class="btn btn-pri" onclick="doBatchExport()">\u6279\u91cf\u5bfc\u51fa\u5df2\u9009</button><button class="btn btn-out btn-sm" onclick="doExportJSONCompare()">\u5bfc\u51faJSON</button><button class="btn btn-out btn-sm" onclick="doExportHTMLCompare()">\u5bfc\u51fa\u7f51\u9875</button></div>';
+  el.innerHTML = h;
+}
+
+function toggleExportItem(chk) {
+  var id = parseInt(chk.dataset.id);
+  var item = document.getElementById('eli-' + id);
+  if (item) item.classList.toggle('el-sel', chk.checked);
+  var all = document.querySelectorAll('.el-chk');
+  var sa = document.getElementById('exportSelectAll');
+  if (sa) sa.checked = Array.from(all).every(function(c){return c.checked});
+}
+
+function toggleExportAll(master) {
+  document.querySelectorAll('.el-chk').forEach(function(c){
+    c.checked = master.checked;
+    var id = parseInt(c.dataset.id);
+    var item = document.getElementById('eli-' + id);
+    if (item) item.classList.toggle('el-sel', c.checked);
+  });
+}
+
+function buildExportText(r) {
+  var isHigh = r.type === 'highbeam';
+  var active = METRICS.filter(function(m){return (isHigh?m.wt.high:m.wt.low)>0});
+  var w = {}; METRICS.forEach(function(m){w[m.key]=isHigh?m.wt.high:m.wt.low});
+  var t = '\u2550'.repeat(46) + '\n  \u524d\u7167\u706f\u4e3b\u89c2\u8bc4\u4ef7\u62a5\u544a \u00b7 AI \u81ea\u52a8\u8bc4\u5206\n' + '\u2550'.repeat(46) + '\n\n';
+  t += '\u706f\u5177\u540d\u79f0\uff1a' + r.name + '\n\u706f    \u578b\uff1a' + (isHigh ? '\u8fdc\u5149\u706f' : '\u8fd1\u5149\u706f') + '\n\u8bc4\u4ef7\u65b9\u5f0f\uff1aAI \u81ea\u52a8\u8bc4\u5206\n\u8bc4\u4ef7\u65e5\u671f\uff1a' + new Date().toLocaleDateString('zh-CN') + '\n';
+  t += '\u2500'.repeat(46) + '\n\n\u4e00\u3001\u9010\u9879\u8bc4\u5206\n\n';
+  active.forEach(function(m) {
+    var s = r.scores[m.key];
+    var ws = s * w[m.key] / 100;
+    t += '  ' + m.name + ' ' + w[m.key] + '% ' + s + '\u5206 ' + ws.toFixed(2) + ' ' + (r.reasons[m.key] || '\u2014') + '\n';
+  });
+  t += '\n  \u52a0\u6743\u603b\u5206\uff1a' + r.total + ' / 5.00\n\n\u4e8c\u3001\u8bc4\u7ea7\uff1a' + RATING[r.rating].label + '\n\n';
+  if (r.penalties && r.penalties.length) {
+    t += '\u4e09\u3001\u60e9\u7f5a\u89e6\u53d1\n';
+    r.penalties.forEach(function(p){t += '  \u2022 ' + p.t + '\n'});
+    t += '\n';
+  }
+  t += '\n' + '\u2500'.repeat(46) + '\n  \u8bc4\u4ef7\u6807\u51c6\uff1a\u524d\u7167\u706f\u4e3b\u89c2\u8bc4\u4ef7\u6807\u51c6 v2026.07\n' + '\u2550'.repeat(46) + '\n';
+  return t;
+}
+
+function doExportSingle(id) {
+  var item = batchItems.find(function(b){return b.id === id});
+  if (!item || !item.result) { alert('\u8be5\u7ec4\u672a\u8bc4\u5206'); return; }
+  var txt = buildExportText(item.result);
+  var box = document.getElementById('exportBox');
+  box.textContent = txt;
+  box.classList.add('show');
+}
+
+function doCopySingle(id) {
+  var item = batchItems.find(function(b){return b.id === id});
+  if (!item || !item.result) { alert('\u8be5\u7ec4\u672a\u8bc4\u5206'); return; }
+  var txt = buildExportText(item.result);
+  navigator.clipboard.writeText(txt).then(function(){alert('\u5df2\u590d\u5236')}).catch(function(){alert('\u590d\u5236\u5931\u8d25')});
+}
+
+function doBatchExport() {
+  var checked = document.querySelectorAll('.el-chk:checked');
+  if (checked.length === 0) { alert('\u8bf7\u5148\u52fe\u9009\u8981\u5bfc\u51fa\u7684\u706f\u5177'); return; }
+  var allTxt = '';
+  checked.forEach(function(chk) {
+    var id = parseInt(chk.dataset.id);
+    var item = batchItems.find(function(b){return b.id === id});
+    if (item && item.result) {
+      if (allTxt) allTxt += '\n\n' + '\u2550'.repeat(46) + '\n\n';
+      allTxt += buildExportText(item.result);
+    }
+  });
+  if (!allTxt) { alert('\u65e0\u6cd5\u5bfc\u51fa'); return; }
+  var box = document.getElementById('exportBox');
+  box.textContent = allTxt;
+  box.classList.add('show');
+}
+// ═══════════════════════════════════════════════
+// JSON & HTML Export
+// ═══════════════════════════════════════════════
+function buildJSONReport(r) {
+  var isHigh = r.type === 'highbeam';
+  var active = METRICS.filter(function(m){ return (isHigh ? m.wt.high : m.wt.low) > 0; });
+  var metrics = active.map(function(m) {
+    var s = r.scores[m.key] || 0;
+    var wt = isHigh ? m.wt.high : m.wt.low;
+    return { key: m.key, name: m.name, icon: m.icon, type: m.type, weight: wt, score: s, weighted: +(s * wt / 100).toFixed(2), reason: r.reasons[m.key] || '' };
+  });
+  var scores = metrics.map(function(m){ return m.score; });
+  return {
+    version: '1.0', generatedAt: new Date().toISOString(), standard: '前照灯主观评价标准 v2026.07',
+    light: {
+      name: r.name, type: r.type, typeName: isHigh ? '远光灯' : '近光灯',
+      totalScore: r.total, rating: r.rating, ratingLabel: RATING[r.rating].label,
+      stats: { min: Math.min.apply(null, scores), max: Math.max.apply(null, scores), avg: +(scores.reduce(function(a,b){return a+b},0) / scores.length).toFixed(2) },
+      metrics: metrics, penalties: (r.penalties || []).map(function(p){ return { level: p.l, text: p.t }; })
+    }
+  };
+}
+
+function buildJSONCompare() {
+  if (lightList.length < 2) return null;
+  var isHigh = lightList[0].type === 'highbeam';
+  var active = METRICS.filter(function(m){ return (isHigh ? m.wt.high : m.wt.low) > 0; });
+  var sorted = lightList.slice().sort(function(a,b){ return ORDER.indexOf(a.rating) - ORDER.indexOf(b.rating) || b.total - a.total; });
+  var lights = sorted.map(function(l, i) {
+    var metrics = active.map(function(m) {
+      var s = l.scores[m.key] || 0; var wt = isHigh ? m.wt.high : m.wt.low;
+      return { key: m.key, name: m.name, weight: wt, score: s, weighted: +(s * wt / 100).toFixed(2), reason: l.reasons[m.key] || '' };
+    });
+    var sc = metrics.map(function(m){ return m.score; });
+    return { name: l.name, rank: i+1, type: l.type, typeName: isHigh ? '远光灯' : '近光灯', totalScore: l.total, rating: l.rating, ratingLabel: RATING[l.rating].label,
+      stats: { min: Math.min.apply(null, sc), max: Math.max.apply(null, sc), avg: +(sc.reduce(function(a,b){return a+b},0)/sc.length).toFixed(2) },
+      metrics: metrics, penalties: (l.penalties||[]).map(function(p){ return {level:p.l,text:p.t}; }) };
+  });
+  var comparison = active.map(function(m) {
+    var best = lights.reduce(function(a,b){ var sa=a.metrics.find(function(x){return x.key===m.key}).score, sb=b.metrics.find(function(x){return x.key===m.key}).score; return sa>=sb?a:b; });
+    var worst = lights.reduce(function(a,b){ var sa=a.metrics.find(function(x){return x.key===m.key}).score, sb=b.metrics.find(function(x){return x.key===m.key}).score; return sa<=sb?a:b; });
+    return { key:m.key, name:m.name, weight:(isHigh?m.wt.high:m.wt.low), bestLight:best.name, bestScore:best.metrics.find(function(x){return x.key===m.key}).score, worstLight:worst.name, worstScore:worst.metrics.find(function(x){return x.key===m.key}).score, spread:best.metrics.find(function(x){return x.key===m.key}).score - worst.metrics.find(function(x){return x.key===m.key}).score };
+  });
+  return { version:'1.0', generatedAt:new Date().toISOString(), standard:'前照灯主观评价标准 v2026.07', lightCount:lights.length, lightType:isHigh?'highbeam':'lowbeam', lightTypeName:isHigh?'远光灯':'近光灯', lights:lights, comparison:comparison };
+}
+
+function downloadJSON(data, filename) {
+  var blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+}
+function downloadHTML(html, filename) {
+  var blob = new Blob([html], {type:'text/html'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+}
+
+function doExportJSONSingle(id) {
+  var item = batchItems.find(function(b){return b.id===id});
+  if (!item||!item.result) { alert('该组未评分'); return; }
+  downloadJSON(buildJSONReport(item.result), (item.name||'report')+'.json');
+}
+function doExportHTMLSingle(id) {
+  var item = batchItems.find(function(b){return b.id===id});
+  if (!item||!item.result) { alert('该组未评分'); return; }
+  downloadHTML(buildReportHTML(buildJSONReport(item.result)), (item.name||'report')+'.html');
+}
+function doExportJSONCompare() {
+  var data = buildJSONCompare();
+  if (!data) { alert('请先添加至少2盏灯具并评分'); return; }
+  downloadJSON(data, 'compare_'+new Date().toISOString().slice(0,10)+'.json');
+}
+function doExportHTMLCompare() {
+  var data = buildJSONCompare();
+  if (!data) { alert('请先添加至少2盏灯具并评分'); return; }
+  downloadHTML(buildCompareHTML(data), 'compare_'+new Date().toISOString().slice(0,10)+'.html');
+}
+
+function buildReportHTML(d) {
+  var L=d.light, rc={excellent:'#FF6700',good:'#22C55E',qualified:'#F59E0B',poor:'#EF4444'}[L.rating]||'#888';
+  var rows=L.metrics.map(function(m){return '<tr><td>'+m.icon+' '+m.name+'</td><td>'+m.weight+'%</td><td style="font-weight:700;color:'+rc+'">'+m.score+'</td><td>'+m.weighted.toFixed(2)+'</td><td style="font-size:12px;color:#666">'+escapeHtml(m.reason)+'</td></tr>'}).join('');
+  var bars=L.metrics.map(function(m){var c=m.score>=4?'#FF6700':m.score>=3?'#22C55E':m.score>=2?'#F59E0B':'#EF4444';return '<div style="display:flex;align-items:center;gap:10px;margin:8px 0"><span style="width:100px;font-size:13px;color:#555">'+m.icon+' '+m.name+'</span><div style="flex:1;background:#f0f0f0;border-radius:6px;height:20px;overflow:hidden"><div style="width:'+m.score/5*100+'%;height:100%;background:'+c+';border-radius:6px"></div></div><span style="font-weight:700;font-size:15px;color:'+c+';width:30px;text-align:center">'+m.score+'</span></div>'}).join('');
+  var pen=L.penalties.map(function(p){var bc=p.level==='block'?'#FEE2E2':p.level==='warn'?'#FEF3C7':'#E0E7FF';var tc=p.level==='block'?'#DC2626':p.level==='warn'?'#D97706':'#4F46E5';return '<div style="padding:10px 16px;margin:6px 0;border-radius:8px;background:'+bc+';color:'+tc+';font-size:13px">! '+p.text+'</div>'}).join('');
+  var best=L.metrics.reduce(function(a,b){return a.score>b.score?a:b}),worst=L.metrics.reduce(function(a,b){return a.score<b.score?a:b});
+  var sug=worst.score<=2?'建议重点改进「'+worst.name+'（'+worst.score+'分）」，该项明显低于平均水平。':'各项均达到良好以上水平，可继续优化「'+worst.name+'」以达到更优评级。';
+  return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHtml(L.name)+' — 前照灯评价报告</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f8f8f8;color:#1a1a1a;padding:40px 20px}.box{max-width:800px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 2px 20px rgba(0,0,0,.08);overflow:hidden}.hd{background:linear-gradient(135deg,#FF6700,#ff8533);color:#fff;padding:32px;text-align:center}.hd h1{font-size:22px;margin-bottom:6px}.hd p{opacity:.85;font-size:14px}.hero{display:flex;align-items:center;justify-content:center;gap:32px;padding:28px;background:#fafafa;border-bottom:1px solid #eee}.sec{padding:24px 32px}.sec h2{font-size:16px;color:#333;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #FF6700;display:inline-block}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#f5f5f5;padding:10px 12px;text-align:left;font-weight:600;color:#555;border-bottom:2px solid #eee}td{padding:10px 12px;border-bottom:1px solid #f0f0f0}.sug{padding:16px 20px;background:#FFF7ED;border-left:4px solid #FF6700;border-radius:0 8px 8px 0;font-size:13px;color:#7C2D12}.ft{text-align:center;padding:20px;font-size:12px;color:#999;border-top:1px solid #eee}</style></head><body><div class="box"><div class="hd"><h1>前照灯主观评价报告</h1><p>'+L.typeName+' · AI 自动评分 · '+new Date(d.generatedAt).toLocaleDateString('zh-CN')+'</p></div><div class="hero"><div style="position:relative;width:100px;height:100px"><svg width="100" height="100" viewBox="0 0 100 100" style="transform:rotate(-90deg)"><circle cx="50" cy="50" r="40" fill="none" stroke="#eee" stroke-width="8"/><circle cx="50" cy="50" r="40" fill="none" stroke="'+rc+'" stroke-width="8" stroke-dasharray="'+(2*Math.PI*40)+'" stroke-dashoffset="'+(2*Math.PI*40*(1-L.totalScore/5))+'" stroke-linecap="round"/></svg><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:800;color:'+rc+'">'+L.totalScore+'</div></div><div><div style="font-size:14px;color:#888;margin-bottom:6px">灯具名称</div><div style="font-size:20px;font-weight:700;margin-bottom:8px">'+escapeHtml(L.name)+'</div><span style="display:inline-block;padding:6px 18px;border-radius:20px;font-size:14px;font-weight:600;color:#fff;background:'+rc+'">'+L.ratingLabel+'</span></div></div><div class="sec"><h2>分项评分</h2>'+bars+'</div><div class="sec"><h2>详细评分表</h2><table><tr><th>指标</th><th>权重</th><th>评分</th><th>加权</th><th>AI 分析理由</th></tr>'+rows+'<tr style="font-weight:700;background:#fafafa"><td>合计</td><td>100%</td><td></td><td>'+L.totalScore+'</td><td></td></tr></table></div>'+(pen?'<div class="sec"><h2>惩罚触发</h2>'+pen+'</div>':'')+'<div class="sec"><h2>统计与建议</h2><div style="display:flex;gap:20px;margin-bottom:16px"><div style="flex:1;padding:14px;background:#f5f5f5;border-radius:10px;text-align:center"><div style="font-size:12px;color:#888">最高分</div><div style="font-size:24px;font-weight:700;color:#FF6700">'+L.stats.max+'</div><div style="font-size:11px;color:#aaa">'+best.name+'</div></div><div style="flex:1;padding:14px;background:#f5f5f5;border-radius:10px;text-align:center"><div style="font-size:12px;color:#888">最低分</div><div style="font-size:24px;font-weight:700;color:#EF4444">'+L.stats.min+'</div><div style="font-size:11px;color:#aaa">'+worst.name+'</div></div><div style="flex:1;padding:14px;background:#f5f5f5;border-radius:10px;text-align:center"><div style="font-size:12px;color:#888">平均分</div><div style="font-size:24px;font-weight:700;color:#22C55E">'+L.stats.avg+'</div><div style="font-size:11px;color:#aaa">全部指标</div></div></div><div class="sug">改进建议：'+sug+'</div></div><div class="ft">评价标准：'+d.standard+' · '+new Date(d.generatedAt).toLocaleString('zh-CN')+'</div></div></body></html>';
+}
+
+function buildCompareHTML(d) {
+  var rc={excellent:'#FF6700',good:'#22C55E',qualified:'#F59E0B',poor:'#EF4444'};
+  var rl=['★ 第1名','第2名','第3名','第4名','第5名'];
+  var rankRows=d.lights.map(function(l,i){var c=rc[l.rating]||'#888';return '<tr'+(i===0?' style="background:#FFF7ED"':'')+'><td style="font-weight:700">'+(rl[i]||'第'+(i+1)+'名')+'</td><td style="font-weight:600">'+escapeHtml(l.name)+'</td><td style="font-weight:800;font-size:18px;color:'+c+'">'+l.totalScore+'</td><td><span style="display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;color:#fff;background:'+c+'">'+l.ratingLabel+'</span></td></tr>'}).join('');
+  var mHead='<tr><th>指标</th><th>权重</th>';d.lights.forEach(function(l){mHead+='<th>'+escapeHtml(l.name)+'</th>';});mHead+='</tr>';
+  var mRows=d.comparison.map(function(c){var row='<tr><td>'+c.name+'</td><td>'+c.weight+'%</td>';d.lights.forEach(function(l){var m=l.metrics.find(function(x){return x.key===c.key});var isB=l.name===c.bestLight&&c.spread>0,isW=l.name===c.worstLight&&c.spread>0;var st=isB?'font-weight:800;color:#FF6700;background:#FFF7ED':isW?'color:#EF4444':'';row+='<td style="'+st+';text-align:center">'+m.score+'</td>';});return row+'</tr>'}).join('');
+  var tRow='<tr style="font-weight:700;background:#f5f5f5"><td>加权总分</td><td>100%</td>';d.lights.forEach(function(l){tRow+='<td style="text-align:center;font-size:16px">'+l.totalScore+'</td>';});tRow+='</tr>';
+  var cards=d.lights.map(function(l){var b=l.metrics.reduce(function(a,b){return a.score>b.score?a:b}),w=l.metrics.reduce(function(a,b){return a.score<b.score?a:b});var c=rc[l.rating]||'#888';return '<div style="flex:1;min-width:200px;padding:16px;border:1px solid #eee;border-radius:12px;background:#fafafa"><div style="font-weight:700;font-size:15px;margin-bottom:4px">'+escapeHtml(l.name)+'</div><span style="display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;color:#fff;background:'+c+'">'+l.ratingLabel+'</span><div style="margin-top:10px;font-size:12px;color:#555"><div>优势：'+b.name+'（'+b.score+'分）</div><div>劣势：'+w.name+'（'+w.score+'分）</div></div></div>'}).join('');
+  var gaps=d.comparison.filter(function(c){return c.spread>0}).map(function(c){return '<div style="padding:10px 16px;background:#f5f5f5;border-radius:8px;font-size:13px"><strong>'+c.name+'（'+c.weight+'%）：</strong>'+escapeHtml(c.bestLight)+'('+c.bestScore+') vs '+escapeHtml(c.worstLight)+'('+c.worstScore+') → 差距 '+c.spread+' 分</div>'}).join('');
+  var sug=d.comparison.filter(function(c){return c.spread>0}).map(function(c){return escapeHtml(c.worstLight)+'应重点改进「'+c.name+'」（当前'+c.worstScore+'分，与最优差距'+c.spread+'分）'}).join('；');
+  var same=d.lights.every(function(l){return l.rating===d.lights[0].rating});
+  var warn=same?'<div style="padding:12px 16px;background:#FEF3C7;border-radius:8px;font-size:13px;color:#92400E;margin-top:12px">所有灯具均落入「'+d.lights[0].ratingLabel+'」，建议重审拉开区分度</div>':'';
+  return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>前照灯多灯对比报告</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f8f8f8;color:#1a1a1a;padding:40px 20px}.box{max-width:900px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 2px 20px rgba(0,0,0,.08);overflow:hidden}.hd{background:linear-gradient(135deg,#FF6700,#ff8533);color:#fff;padding:32px;text-align:center}.hd h1{font-size:22px;margin-bottom:6px}.hd p{opacity:.85;font-size:14px}.sec{padding:24px 32px}.sec h2{font-size:16px;color:#333;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #FF6700;display:inline-block}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#f5f5f5;padding:10px 12px;text-align:left;font-weight:600;color:#555;border-bottom:2px solid #eee}td{padding:10px 12px;border-bottom:1px solid #f0f0f0}.ft{text-align:center;padding:20px;font-size:12px;color:#999;border-top:1px solid #eee}</style></head><body><div class="box"><div class="hd"><h1>前照灯多灯对比报告</h1><p>'+d.lightCount+' 盏灯具 · '+d.lightTypeName+' · AI 自动评分 · '+new Date(d.generatedAt).toLocaleDateString('zh-CN')+'</p></div><div class="sec"><h2>综合排名</h2><table>'+rankRows+'</table>'+warn+'</div><div class="sec"><h2>逐项对比</h2><table>'+mHead+mRows+tRow+'</table></div><div class="sec"><h2>各灯优劣势</h2><div style="display:flex;gap:16px;flex-wrap:wrap">'+cards+'</div></div>'+(gaps?'<div class="sec"><h2>差距分析</h2>'+gaps+'</div>':'')+'<div class="sec"><h2>改进建议</h2><div style="padding:16px;background:#FFF7ED;border-left:4px solid #FF6700;border-radius:0 8px 8px 0;font-size:13px;color:#7C2D12;white-space:pre-line">'+sug+'</div></div><div class="ft">评价标准：'+d.standard+' · '+new Date(d.generatedAt).toLocaleString('zh-CN')+'</div></div></body></html>';
+}
+
+
+// ═══════════════════════════════════════════════
+// Reset
+// ═══════════════════════════════════════════════
+function resetAll() {
+  if (!confirm('确定要清空所有评分数据吗？此操作不可撤销。')) return;
+  scores = {};
+  reasons = {};
+  confidences = {};
+  imageBase64 = { real: null, fake: null };
+  lastResult = null;
+  lightList = [];
+  activeBatchId = null;
+  currentReportGroupId = null;
+  batchItems = [];
+  addBatchItem();
+  localStorage.removeItem(STORAGE_KEY);
+  initMeters();
+  var gs = document.getElementById('groupSelector'); if (gs) gs.innerHTML = '';
+  document.getElementById('reportContent').innerHTML = '';
+  document.getElementById('compareContent').innerHTML = '';
+  document.getElementById('cmpBarChart').innerHTML = '';
+  var hm = document.getElementById('heatmapWrap'); if (hm) { hm.innerHTML = ''; hm.style.display = 'none'; }
+  document.getElementById('exportBox').textContent = '';
+  document.getElementById('exportBox').classList.remove('show');
+  document.getElementById('importArea').classList.remove('show');
+  document.getElementById('radarSection').style.display = 'none';
+  if (radarChartInstance) { radarChartInstance.destroy(); radarChartInstance = null; }
+  renderChips();
+  document.getElementById('btnAnalyze').disabled = true;
+  const pw = document.getElementById('progressWrap');
+  pw.classList.remove('show');
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('progressFill').style.background = '';
+}
+
+// ═══════════════════════════════════════════════
+// Persistence
+// ═══════════════════════════════════════════════
+const STORAGE_KEY = 'headlight_eval_data';
+
+function saveToStorage() {
+  try {
+    const data = {
+      batchItems: batchItems.map(b => ({
+        id: b.id, name: b.name, type: b.type,
+        realBase64: b.realBase64, fakeBase64: b.fakeBase64,
+        result: b.result
+      })),
+      lightList: lightList,
+      activeBatchId: activeBatchId,
+      batchIdCounter: batchIdCounter
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    // localStorage full or unavailable, silently ignore
+  }
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (data.batchItems && data.batchItems.length > 0) {
+      batchItems = data.batchItems;
+      batchIdCounter = data.batchIdCounter || batchItems.length;
+      activeBatchId = data.activeBatchId || batchItems[0].id;
+    }
+    if (data.lightList && data.lightList.length > 0) {
+      lightList = data.lightList;
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function doJsonExport() {
+  const data = {
+    version: '4.0',
+    exportDate: new Date().toISOString(),
+    batchItems: batchItems.map(b => ({
+      id: b.id, name: b.name, type: b.type,
+      realBase64: b.realBase64, fakeBase64: b.fakeBase64,
+      result: b.result
+    })),
+    lightList: lightList,
+    activeBatchId: activeBatchId
+  };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'headlight_eval_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function toggleImport() {
+  const area = document.getElementById('importArea');
+  area.classList.toggle('show');
+}
+
+function doJsonImport() {
+  const input = document.getElementById('importInput').value.trim();
+  if (!input) { alert('请粘贴 JSON 数据'); return; }
+  try {
+    const data = JSON.parse(input);
+    if (!data.batchItems || !Array.isArray(data.batchItems) || data.batchItems.length === 0) {
+      alert('JSON 数据缺少 batchItems 数组或为空');
+      return;
+    }
+    var valid = data.batchItems.every(function(b) { return b && typeof b.id === 'number'; });
+    if (!valid) { alert('batchItems 数据格式不正确（每项需要有 id 字段）'); return; }
+    batchItems = data.batchItems;
+    batchIdCounter = Math.max.apply(null, batchItems.map(function(b) { return b.id; }));
+    activeBatchId = data.activeBatchId || batchItems[0].id || null;
+    if (data.lightList && Array.isArray(data.lightList)) {
+      lightList = data.lightList;
+    }
+    renderBatch();
+    renderChips();
+    if (lightList.length >= 2) {
+      renderCmp();
+      renderRadar();
+    }
+    saveToStorage();
+    toggleImport();
+    document.getElementById('importInput').value = '';
+    alert('导入成功');
+  } catch (e) {
+    alert('JSON 格式错误，请检查');
+  }
+}
+
+// ═══════════════════════════════════════════════
+// AI Integration
+// ═══════════════════════════════════════════════
+window.__aiActions = window.__aiActions || {};
+window.__aiActions['headlight_eval'] = {
+  render: function(p) {
+    var label = (p.name || '当前灯具') + ' ' + (p.type === 'highbeam' ? '远光灯' : '近光灯');
+    return '<button class="ai-action-btn" onclick="window.__aiActions[\'headlight_eval\'].execute(' + JSON.stringify(p).replace(/"/g, '&quot;') + ')">开始评价：' + label + '</button>';
+  },
+  execute: function(p) {
+    if (batchItems.length === 0) addBatchItem();
+    const item = batchItems[0];
+    if (p.name) { item.name = p.name; }
+    if (p.type) { item.type = p.type; }
+    renderBatch();
+    applyBatch(item.id);
+    if (p.auto_run) setTimeout(function() { document.getElementById('btnAnalyze').click(); }, 300);
+  }
+};
+
+// ═══════════════════════════════════════════════
+// Light/Dark Mode Switcher
+// ═══════════════════════════════════════════════
+const LIGHT_THEME = {
+  '--pri': '#FF6700',
+  '--pri2': '#FF8533',
+  '--pri3': '#FFB380',
+  '--bg': '#F5F5F5',
+  '--bg2': '#EBEBEB',
+  '--bg3': '#E0E0E0',
+  '--card': '#FFFFFF',
+  '--card2': '#F8F8F8',
+  '--glass': 'rgba(255,255,255,.88)',
+  '--glass2': 'rgba(255,255,255,.65)',
+  '--txt': '#1A1A1A',
+  '--txt2': '#4A4A4A',
+  '--txt3': '#8A8A8A',
+  '--bdr': '#E0E0E0',
+  '--bdr2': '#EBEBEB',
+  '--ok': '#16A34A',
+  '--warn': '#D97706',
+  '--bad': '#DC2626',
+  '--cyan': '#FF6700',
+  '--amber': '#FF6700',
+  '--amber2': '#FFB380',
+  '--guide-card': 'rgba(255,255,255,.85)',
+  '--guide-card-hover': 'rgba(255,103,0,.10)'
+};
+
+const DARK_THEME = {
+  '--pri': '#FF6700',
+  '--pri2': '#FF8533',
+  '--pri3': '#FFB380',
+  '--bg': '#0A0A0C',
+  '--bg2': '#121215',
+  '--bg3': '#1A1A1F',
+  '--card': '#161619',
+  '--card2': '#1E1E22',
+  '--glass': 'rgba(22,22,25,.88)',
+  '--glass2': 'rgba(22,22,25,.65)',
+  '--txt': '#E8E4DF',
+  '--txt2': '#B0AAA2',
+  '--txt3': '#7A756E',
+  '--bdr': '#2A2A30',
+  '--bdr2': '#222228',
+  '--ok': '#22C55E',
+  '--warn': '#F59E0B',
+  '--bad': '#EF4444',
+  '--cyan': '#FF6700',
+  '--amber': '#FF6700',
+  '--amber2': '#FFB380',
+  '--guide-card': 'rgba(10,10,12,.70)',
+  '--guide-card-hover': 'rgba(255,103,0,.08)'
+};
+
+let isDarkMode = true;
+
+function toggleTheme() {
+  isDarkMode = !isDarkMode;
+  applyTheme();
+  localStorage.setItem('headlight_mode', isDarkMode ? 'dark' : 'light');
+  updateThemeIcon();
+}
+
+function applyTheme() {
+  const theme = isDarkMode ? DARK_THEME : LIGHT_THEME;
+  const r = document.documentElement;
+  Object.keys(theme).forEach(function(key) {
+    r.style.setProperty(key, theme[key]);
+  });
+}
+
+function updateThemeIcon() {
+  const btn = document.getElementById('themeToggle');
+  if (btn) {
+    btn.innerHTML = isDarkMode ? '☀️' : '🌙';
+    btn.title = isDarkMode ? '切换到亮色模式' : '切换到暗色模式';
+  }
+}
+
+function loadThemeMode() {
+  const saved = localStorage.getItem('headlight_mode');
+  isDarkMode = saved ? saved === 'dark' : true;
+  applyTheme();
+  updateThemeIcon();
+}
+
+// Load saved theme on startup
+loadThemeMode();
+
+(function() {
+  var sp = new URLSearchParams(location.search);
+  if (sp.has('name') || sp.has('type')) {
+    if (batchItems.length === 0) addBatchItem();
+    const item = batchItems[0];
+    if (sp.get('name')) item.name = sp.get('name');
+    if (sp.get('type')) item.type = sp.get('type');
+    renderBatch();
+    applyBatch(item.id);
+    if (sp.get('auto_run')) setTimeout(function() { document.getElementById('btnAnalyze').click(); }, 300);
+  }
+})();
+</script>
+<script src="/ai-widget.js"></script>
+</body>
+</html>

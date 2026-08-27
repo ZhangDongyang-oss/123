@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 凭据（绝不入库）
+.env
+.viim.env
+webapp/database/session_tokens.json
+
+# 运行时临时数据
+webapp/database/temp_uploads/
+webapp/database/reminders.json
+
+# 备份与系统文件
+*.bak
+.DS_Store
+Thumbs.db
+
+# 日志
+logs/

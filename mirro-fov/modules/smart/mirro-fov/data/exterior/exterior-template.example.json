@@ -1,0 +1,67 @@
+{
+  "vehicle": { "name": "Template" },
+  "driver": {
+    "eye_center": [1.5, -0.4, 1.0],
+    "interpupillary_distance": 0.065,
+    "eye_left_raw": [1.5, -0.4325, 1.0],
+    "eye_right_raw": [1.5, -0.3675, 1.0]
+  },
+  "ground": {
+    "front_mid": [-2.0, 0.0, -0.4],
+    "rear_mid": [5.0, 0.0, -0.4]
+  },
+  "door_panel": {
+    "door_outer_Y_left": -1.0,
+    "door_outer_Y_right": 1.0
+  },
+  "exterior_mirror_left": {
+    "sr_nominal": 1.230,
+    "sr_tolerance": 0.030,
+    "sr_fit": 1.260,
+    "radius": 1.260,
+    "profile_tol_mm": 0.3,
+    "outline_raw": [
+      [1.0, -1.1, 0.87],
+      [1.0, -1.1, 0.97],
+      [0.94, -0.95, 0.97],
+      [0.94, -0.95, 0.84],
+      [0.94, -0.95, 0.83],
+      [1.0, -1.1, 0.84]
+    ],
+    "supplier_sphere_center": [-0.19, -1.50, 0.90],
+    "turret_axis_p1": [0.90, -1.00, 0.84],
+    "axis_y_point": [0.87, -0.91, 0.84],
+    "axis_z_point": [0.91, -1.00, 0.94],
+    "rotation_axis_dir": [-0.39, 0.92, 0.005]
+  },
+  "exterior_mirror_right": {
+    "sr_nominal": 1.230,
+    "sr_tolerance": 0.030,
+    "sr_fit": 1.260,
+    "radius": 1.260,
+    "profile_tol_mm": 0.3,
+    "outline_raw": [
+      [1.05, 1.12, 0.87],
+      [1.03, 1.09, 0.97],
+      [0.94, 0.94, 0.97],
+      [0.93, 0.93, 0.87],
+      [0.94, 0.95, 0.83],
+      [1.03, 1.09, 0.84]
+    ],
+    "supplier_sphere_center": [-0.08, 1.68, 0.95],
+    "turret_axis_p1": [0.90, 1.00, 0.84],
+    "axis_y_point": [0.96, 1.08, 0.84],
+    "axis_z_point": [0.91, 1.00, 0.94],
+    "rotation_axis_dir": [0.54, 0.84, -0.005]
+  },
+  "regulation": {
+    "standard": "GB 15084",
+    "mirror_class": "III",
+    "width_near": 1.0,
+    "width_far": 4.0,
+    "dist_near": 4.0,
+    "dist_far": 20.0,
+    "margin_mm": 3.0,
+    "adjust_deg": 3.0
+  }
+}

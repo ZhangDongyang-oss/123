@@ -1,0 +1,14 @@
+{
+  "name": "mirro-fov",
+  "version": "2.4.0",
+  "description": "GB 15084 内后视镜视野法规校核工具",
+  "main": "_test_server.js",
+  "scripts": {
+    "start": "node _test_server.js",
+    "test": "node engine/inner/test.js && node engine/exterior/test-exterior.js && node engine/exterior/test-sphere-fit.js"
+  },
+  "dependencies": {
+    "express": "^4.22.2",
+    "js-yaml": "^4.1.0"
+  }
+}

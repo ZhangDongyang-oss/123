@@ -1,0 +1,21 @@
+node_modules/
+*.png
+*.jpg
+*.zip
+*.html.tmp
+catia_read.yaml
+catia_read.json
+__pycache__/
+*.pyc
+
+# 敏感数据 (真实车型坐标/供应商数据, 不入库)
+modules/smart/mirro-fov/data/vehicles/*.json
+!modules/smart/mirro-fov/data/vehicles/*.example.json
+modules/smart/mirro-fov/data/vehicles/*.outline.json
+modules/smart/mirro-fov/data/exterior/*.json
+!modules/smart/mirro-fov/data/exterior/*.example.json
+
+# 平台落地页 (含内部组织名/部署说明, 不入库)
+modules/smart/public/index.html
+# 临时 STEP 上传/提取产物 (任意层级)
+**/data/tmp/

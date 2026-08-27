@@ -1,0 +1,164 @@
+[
+ {
+  "key": "CASE-0001",
+  "summary": "尾灯洗车后起雾，静置2小时后消退",
+  "description": "尾灯洗车后起雾，静置2小时后消退",
+  "area": "EXT-Rear End",
+  "lamp_types": [
+   "尾灯"
+  ],
+  "attr": [
+   "性能"
+  ],
+  "problem_type": "水管理",
+  "status": "Closed",
+  "solution": "检查通气塞装配到位，增加下线点检工序，已落实",
+  "root_cause": "",
+  "project": "DEMO",
+  "responsible": "工程师A",
+  "source_origin": "DEMO",
+  "bitable_xh": "20260100001",
+  "solution_quality": "human",
+  "keywords": [
+   "尾灯"
+  ],
+  "problem_images": [],
+  "fix_images": [],
+  "url": "https://ticket.example.com/browse/ISSUE-1001"
+ },
+ {
+  "key": "CASE-0002",
+  "summary": "贯穿灯夜间点亮可见竖向色差分界",
+  "description": "贯穿灯夜间点亮可见竖向色差分界",
+  "area": "EXT-Rear End",
+  "lamp_types": [
+   "后贯穿灯"
+  ],
+  "attr": [
+   "性能"
+  ],
+  "problem_type": "外观/光学",
+  "status": "Closed",
+  "solution": "调整导光条入光角度并收紧喷涂膜厚公差，样件验证OK",
+  "root_cause": "",
+  "project": "DEMO",
+  "responsible": "工程师B",
+  "source_origin": "DEMO",
+  "bitable_xh": "20260100002",
+  "solution_quality": "human",
+  "keywords": [
+   "后贯穿灯"
+  ],
+  "problem_images": [],
+  "fix_images": [],
+  "url": "https://ticket.example.com/browse/ISSUE-1002"
+ },
+ {
+  "key": "CASE-0003",
+  "summary": "转向灯颠簸路况偶发闪烁",
+  "description": "转向灯颠簸路况偶发闪烁",
+  "area": "EXT-Front",
+  "lamp_types": [
+   "转向灯"
+  ],
+  "attr": [
+   "性能"
+  ],
+  "problem_type": "电气",
+  "status": "Closed",
+  "solution": "插接器端子正向力不足，更换端子规格并增加拉拔力检查",
+  "root_cause": "",
+  "project": "DEMO",
+  "responsible": "工程师C",
+  "source_origin": "DEMO",
+  "bitable_xh": "20260100003",
+  "solution_quality": "human",
+  "keywords": [
+   "转向灯"
+  ],
+  "problem_images": [],
+  "fix_images": [],
+  "url": "https://ticket.example.com/browse/ISSUE-1003"
+ },
+ {
+  "key": "CASE-0004",
+  "summary": "日行灯导光条亮度不均（目视可见亮暗段）",
+  "description": "日行灯导光条亮度不均（目视可见亮暗段）",
+  "area": "EXT-Front",
+  "lamp_types": [
+   "日行灯"
+  ],
+  "attr": [
+   "性能"
+  ],
+  "problem_type": "光学",
+  "status": "Closed",
+  "solution": "优化LED分区PWM补偿曲线，更新软件版本",
+  "root_cause": "",
+  "project": "DEMO",
+  "responsible": "工程师D",
+  "source_origin": "DEMO",
+  "bitable_xh": "20260100004",
+  "solution_quality": "human",
+  "keywords": [
+   "日行灯"
+  ],
+  "problem_images": [],
+  "fix_images": [],
+  "url": "https://ticket.example.com/browse/ISSUE-1004"
+ },
+ {
+  "key": "CASE-0005",
+  "summary": "低温-30℃跌落试验灯壳开裂",
+  "description": "低温-30℃跌落试验灯壳开裂",
+  "area": "EXT-Rear End",
+  "lamp_types": [
+   "尾灯"
+  ],
+  "attr": [
+   "性能"
+  ],
+  "problem_type": "材料",
+  "status": "Closed",
+  "solution": "灯壳材料改用增韧牌号，加厚应力集中区域壁厚",
+  "root_cause": "",
+  "project": "DEMO",
+  "responsible": "工程师E",
+  "source_origin": "DEMO",
+  "bitable_xh": "20260100005",
+  "solution_quality": "human",
+  "keywords": [
+   "尾灯"
+  ],
+  "problem_images": [],
+  "fix_images": [],
+  "url": "https://ticket.example.com/browse/ISSUE-1005"
+ },
+ {
+  "key": "CASE-0006",
+  "summary": "高位制动灯不亮，供电针脚退针",
+  "description": "高位制动灯不亮，供电针脚退针",
+  "area": "EXT-Rear End",
+  "lamp_types": [
+   "高位制动灯"
+  ],
+  "attr": [
+   "性能"
+  ],
+  "problem_type": "电气",
+  "status": "Closed",
+  "solution": "护套锁止结构增加二次锁定（TPA），装配作业指导书同步更新",
+  "root_cause": "",
+  "project": "DEMO",
+  "responsible": "工程师F",
+  "source_origin": "DEMO",
+  "bitable_xh": "20260100006",
+  "solution_quality": "human",
+  "keywords": [
+   "高位制动灯"
+  ],
+  "problem_images": [],
+  "fix_images": [],
+  "url": "https://ticket.example.com/browse/ISSUE-1006"
+ }
+]

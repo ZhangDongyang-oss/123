@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+{% set active = 'home' %}
+{% block title %}问一下 · FC 可行性分析（灯光）{% endblock %}
+
+{% block content %}
+<section class="hero hero--center" style="padding-bottom:20px;margin-bottom:12px">
+  <span class="text-eyebrow">Ask</span>
+  <h2>问一下</h2>
+  <p class="hero-sub">描述你遇到的 FC 问题，AI 将检索历史案例并给出可行性分析。</p>
+
+  <form id="analyze-form" class="composer" autocomplete="off"
+        hx-post="/api/analyze"
+        hx-target="#result-area"
+        hx-swap="innerHTML"
+        hx-indicator="#think">
+    <textarea name="query" rows="4" placeholder="例如：前灯起雾，洗车后灯罩内凝露…" required></textarea>
+
+    <div class="composer-bar">
+      <div class="composer-bar__left">
+        <label class="btn-secondary btn-sm" title="附加图片">
+          <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          图片
+          <input type="file" name="images" accept="image/*" multiple hidden onchange="previewImages(this)">
+        </label>
+        <span id="attach-count" class="muted" style="font-size:12px"></span>
+      </div>
+      <button type="submit" class="btn-gradient">
+        <span id="think" class="htmx-indicator">
+          <svg class="icon spin" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        </span>
+        分析
+      </button>
+    </div>
+
+    <div id="image-preview" class="composer__preview" style="display:none"></div>
+  </form>
+
+  <div class="chips">
+    <span class="chips-caption">试试这些例子</span>
+    <button class="chip" onclick="fillQuery(this)">前灯起雾，洗车后灯罩内凝露</button>
+    <button class="chip" onclick="fillQuery(this)">尾灯色差，夜间亮度不足</button>
+    <button class="chip" onclick="fillQuery(this)">转向灯频闪，高温时明显</button>
+    <button class="chip" onclick="fillQuery(this)">雾灯配光不合格</button>
+    <button class="chip" onclick="fillQuery(this)">LED模组光衰，500小时后亮度下降30%</button>
+  </div>
+</section>
+
+<section id="result-area">
+  {% if analysis %}
+    {% include "report.html" %}
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function fillQuery(btn) {
+  var ta = document.querySelector('.composer textarea');
+  ta.value = btn.textContent.trim();
+  ta.focus();
+}
+
+function previewImages(input) {
+  addAskFiles(Array.from(input.files));
+  input.value = '';
+}
+
+// 图片附件管理：可单个删除、支持粘贴、可整体清空、过大自动压缩
+var askFiles = [];
+function addAskFiles(files) {
+  var jobs = files.map(function (f) {
+    return (window.downscaleImageFile ? downscaleImageFile(f) : Promise.resolve(f));
+  });
+  Promise.all(jobs).then(function (arr) {
+    askFiles = askFiles.concat(arr);
+    renderAskThumbs();
+  });
+}
+function renderAskThumbs() {
+  var box = document.getElementById('image-preview');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!askFiles.length) {
+    box.style.display = 'none';
+    var c = document.getElementById('attach-count');
+    if (c) c.textContent = '';
+    return;
+  }
+  box.style.display = 'flex';
+  askFiles.forEach(function(f, i) {
+    var wrap = document.createElement('div');
+    wrap.className = 'ask-thumb';
+    var img = document.createElement('img');
+    img.className = 'composer__thumb';
+    var rd = new FileReader();
+    rd.onload = function(e) { img.src = e.target.result; };
+    rd.readAsDataURL(f);
+    var x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'ask-thumb__x';
+    x.title = '移除这张图';
+    x.textContent = '×';
+    x.onclick = function(ev) {
+      ev.preventDefault(); ev.stopPropagation();
+      askFiles.splice(i, 1);
+      renderAskThumbs();
+    };
+    wrap.appendChild(img); wrap.appendChild(x);
+    box.appendChild(wrap);
+  });
+  var c = document.getElementById('attach-count');
+  if (c) c.textContent = askFiles.length + ' 张已选';
+}
+function clearAskImages() {
+  askFiles = [];
+  var inp = document.querySelector('#analyze-form input[type=file]');
+  if (inp) inp.value = '';
+  renderAskThumbs();
+}
+// 粘贴图片直接附加
+document.addEventListener('paste', function(e) {
+  var items = (e.clipboardData || window.clipboardData).items || [];
+  var added = [];
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].kind === 'file') {
+      var f = items[i].getAsFile();
+      if (f) added.push(f);
+    }
+  }
+  if (added.length) {
+    e.preventDefault();
+    addAskFiles(added);
+  }
+});
+
+// ── 报告操作（新问题 / 导出报告 / 反馈） ──
+
+function resetForm() {
+  document.getElementById('result-area').innerHTML = '';
+  document.querySelector('.composer textarea').value = '';
+  if (typeof clearAskImages === 'function') clearAskImages();
+  document.querySelector('.composer textarea').focus();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function sendFeedback(type) {
+  var query = document.querySelector('.composer textarea');
+  query = query ? query.value : '';
+  fetch('/api/feedback', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({query: query, rating: type})
+  }).then(function() {
+    var bar = document.querySelector('.feedback-bar');
+    if (bar) bar.innerHTML = '<span style="color:var(--system-green);font-size:12px">✓ 感谢反馈</span>';
+  });
+}
+
+function exportReport() {
+  // 从 HTMX 插入的隐藏 div data-* 属性读取（不会被 HTMX 丢弃）
+  var store = document.getElementById('report-data-store');
+  if (!store) { alert('报告数据未就绪，请先完成分析'); return; }
+  var hits = JSON.parse(store.getAttribute('data-hits') || '[]');
+  var D = {
+    hits: hits,
+    query: JSON.parse(store.getAttribute('data-query') || '""'),
+    summary: JSON.parse(store.getAttribute('data-summary') || '""'),
+    source: JSON.parse(store.getAttribute('data-source') || '""'),
+    root_causes: JSON.parse(store.getAttribute('data-root-causes') || '[]'),
+    directions: JSON.parse(store.getAttribute('data-directions') || '[]'),
+    boundaries: JSON.parse(store.getAttribute('data-boundaries') || '[]'),
+    suggestions: JSON.parse(store.getAttribute('data-suggestions') || '[]')
+  };
+
+  var hits = D.hits || [];
+  var hero = hits[0] || null;
+  var rest = hits.slice(1);
+  var lines = [];
+  var BD_LBL = {text:'文本',symptom:'症状',part:'零件',area:'区域',type:'类型',condition:'条件',relation:'关系',optical:'光学',standard:'法规'};
+
+  // ── 标题 ──
+  lines.push('# FC 可行性分析报告');
+  lines.push('');
+  lines.push('> 生成时间：' + new Date().toLocaleString('zh-CN') + '　｜　问题：' + (D.query || ''));
+  lines.push('');
+
+  // ── 概览 ──
+  lines.push('## 一、概览');
+  lines.push('');
+  lines.push('| 项目 | 内容 |');
+  lines.push('|------|------|');
+  lines.push('| 问题描述 | ' + (D.query || '—') + ' |');
+  lines.push('| 数据源 | ' + (D.source === 'viim' ? 'VIIM 实时检索' : '本地案例库') + ' |');
+  lines.push('| 命中案例数 | ' + hits.length + ' |');
+  if (hero) lines.push('| 最高匹配度 | ' + Math.round(hero.score * 100) + '%（' + hero.key + '） |');
+  lines.push('| 底部概览 | ' + (D.summary || '—') + ' |');
+  lines.push('');
+
+  // ── 推荐方案 ──
+  if (hero) {
+    lines.push('## 二、推荐方案（TOP-1）');
+    lines.push('');
+    lines.push('**' + hero.key + '** — ' + hero.summary);
+    lines.push('');
+    lines.push('- **匹配度**：' + Math.round(hero.score * 100) + '%');
+    if (hero.status)       lines.push('- **状态**：' + hero.status);
+    if (hero.problem_type) lines.push('- **问题类型**：' + hero.problem_type);
+    if (hero.area)         lines.push('- **区域**：' + hero.area);
+    if (hero.priority)     lines.push('- **优先级**：' + hero.priority);
+    if (hero.assignee)     lines.push('- **负责人**：' + hero.assignee);
+    if (hero.created)      lines.push('- **创建日期**：' + hero.created);
+    if (hero.resolution)   lines.push('- **解决方案**：' + hero.resolution);
+    if (hero.solution_quality === 'human') lines.push('- **方案来源**：工程师确认');
+    lines.push('');
+    lines.push('- **VIIM 链接**：[打开 ' + hero.key + '](https://ticket.example.com/browse/' + hero.key + ')');
+    lines.push('');
+
+    if (hero.breakdown && Object.keys(hero.breakdown).length) {
+      lines.push('**匹配度明细**：');
+      for (var bk in hero.breakdown) lines.push('- ' + (BD_LBL[bk]||bk) + '：+' + hero.breakdown[bk]);
+      lines.push('');
+    }
+    if (hero.solution) {
+      lines.push('**历史解决方案**：');
+      lines.push('> ' + hero.solution.substring(0,500).replace(/\n/g,'\n> '));
+      lines.push('');
+    } else if (hero.description) {
+      lines.push('**问题详情**：');
+      lines.push('> ' + hero.description.substring(0,400).replace(/\n/g,'\n> '));
+      lines.push('');
+    }
+    var pi = hero.problem_images||[], fi = hero.fix_images||[], at = hero.attachments||[];
+    if (pi.length || fi.length || at.length) {
+      lines.push('**相关图片**（需 VIIM 登录后查看）：');
+      pi.forEach(function(u,i){ lines.push('- 问题图 '+(i+1)+'：'+u); });
+      fi.forEach(function(u,i){ lines.push('- 整改图 '+(i+1)+'：'+u); });
+      at.forEach(function(a)  { lines.push('- 附件：'+(a.filename||'')+' — '+(a.url||'')); });
+      lines.push('');
+    }
+  }
+
+  // ── 相似案例 ──
+  if (rest.length) {
+    lines.push('## 三、相似案例');
+    lines.push('');
+    lines.push('| 序号 | 工单号 | 摘要 | 匹配度 | 状态 | 方案 |');
+    lines.push('|------|--------|------|--------|------|------|');
+    rest.forEach(function(h,i){
+      var sol = (h.solution||'').substring(0,80).replace(/\n/g,' ').replace(/\|/g,'\\|');
+      lines.push('| '+(i+1)+' | '+h.key+' | '+(h.summary||'').substring(0,40).replace(/\|/g,'\\|')+' | '+Math.round(h.score*100)+'% | '+(h.status||'—')+' | '+(sol||'—')+' |');
+    });
+    lines.push('');
+    rest.forEach(function(h){
+      var p2=h.problem_images||[], f2=h.fix_images||[], a2=h.attachments||[];
+      if(p2.length||f2.length||a2.length){
+        lines.push('**'+h.key+' 相关图片**：');
+        p2.forEach(function(u,i){lines.push('- 问题图 '+(i+1)+'：'+u);});
+        f2.forEach(function(u,i){lines.push('- 整改图 '+(i+1)+'：'+u);});
+        a2.forEach(function(a)  {lines.push('- 附件：'+(a.filename||'')+' — '+(a.url||''));});
+        lines.push('');
+      }
+      if(h.breakdown && Object.keys(h.breakdown).length){
+        lines.push('**'+h.key+' 匹配明细**：');
+        for(var k in h.breakdown) lines.push('- '+(BD_LBL[k]||k)+'：+'+h.breakdown[k]);
+        lines.push('');
+      }
+    });
+  }
+
+  // ── 工程师建议 ──
+  var rc=D.root_causes||[], dirs=D.directions||[], bnds=D.boundaries||[], sugs=D.suggestions||[];
+  if(rc.length||dirs.length||bnds.length||sugs.length){
+    lines.push('## 四、工程师建议');
+    lines.push('');
+    if(rc.length){
+      lines.push('### 根因分析');
+      rc.forEach(function(c){
+        var ic=c.level==='primary'?'🔴':c.level==='secondary'?'🟠':'🔵';
+        lines.push('- '+ic+' '+c.text);
+      });
+      lines.push('');
+    }
+    if(dirs.length){lines.push('### 解决方向');dirs.forEach(function(d){lines.push('- '+d);});lines.push('');}
+    if(bnds.length){lines.push('### 边界条件');bnds.forEach(function(b){lines.push('- '+b);});lines.push('');}
+    if(sugs.length){lines.push('### 操作建议');sugs.forEach(function(s){lines.push('- '+s);});lines.push('');}
+  }
+
+  // ── 匹配度明细汇总 ──
+  if(hits.length>1){
+    var hasBD=false;
+    hits.forEach(function(h){if(h.breakdown&&Object.keys(h.breakdown).length)hasBD=true;});
+    if(hasBD){
+      lines.push('## 五、匹配度明细汇总');
+      lines.push('');
+      var allK=[],kS={};
+      hits.forEach(function(h){if(!h.breakdown)return;for(var k in h.breakdown){if(!kS[k]){kS[k]=1;allK.push(k);}}});
+      var hd='| 工单 | 总匹配度', sp='|------|---------';
+      allK.forEach(function(k){hd+=' | '+(BD_LBL[k]||k);sp+='|------';});
+      hd+=' |';sp+=' |';
+      lines.push(hd);lines.push(sp);
+      hits.forEach(function(h){
+        var r='| '+h.key+' | '+Math.round(h.score*100)+'%';
+        allK.forEach(function(k){r+=' | '+((h.breakdown||{})[k]||'—');});
+        lines.push(r+' |');
+      });
+      lines.push('');
+    }
+  }
+
+  // ── 免责 ──
+  lines.push('---');
+  lines.push('*基于 '+hits.length+' 条历史案例分析'+(hits.length<3?'（样本量较少，仅供参考）':'')+'。报告由 FC 可行性分析系统自动生成。*');
+
+  // ── 下载 ──
+  var md = lines.join('\n');
+  var blob = new Blob([md], {type:'text/markdown;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'FC分析报告_' + new Date().toISOString().slice(0,10) + '.md';
+  a.click();
+}
+</script>
+{% endblock %}

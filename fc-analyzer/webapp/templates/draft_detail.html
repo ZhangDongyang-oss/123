@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% set active = 'history' %}
+{% block title %}草稿详情 · FC 可行性分析（灯光）{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <span class="text-eyebrow">Draft</span>
+  <h2>草稿详情</h2>
+  <p class="hero-sub">查看和编辑 FC 工单草稿。</p>
+</section>
+
+{% if error %}
+<div class="card">
+  <div class="card-body" style="text-align:center;padding:48px">
+    <p style="color:var(--system-red);font-size:16px">{{ error }}</p>
+    <a href="/history" class="btn-secondary" style="margin-top:16px">返回工作台</a>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div>
+        <span class="case-key" style="font-size:18px">DRAFT-{{ draft.id }}</span>
+        <span class="badge badge-amber" style="margin-left:8px">草稿</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <a href="/history" class="btn-secondary btn-sm">
+          <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+          返回
+        </a>
+        <button class="btn-primary btn-sm" onclick="submitDraft('{{ draft.id }}')">
+          <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          提交到 VIIM
+        </button>
+        <button class="btn-danger-ghost btn-sm" onclick="deleteDraft('{{ draft.id }}')">
+          <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          删除草稿
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">问题描述</label>
+      <div style="padding:16px;background:var(--bg-surface);border-radius:12px;font-size:15px;line-height:1.6;white-space:pre-wrap">{{ draft.description }}</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+      <div class="form-group">
+        <label class="form-label">所属区域</label>
+        <div style="padding:12px 16px;background:var(--bg-surface);border-radius:12px;font-size:14px">{{ draft.area or '未识别' }}</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">严重程度</label>
+        <div style="padding:12px 16px;background:var(--bg-surface);border-radius:12px;font-size:14px">{{ draft.severity or '未识别' }}</div>
+      </div>
+    </div>
+
+    {% if draft.fields %}
+    <div class="form-group" style="margin-top:16px">
+      <label class="form-label">AI 提取字段</label>
+      <div style="padding:16px;background:var(--bg-surface);border-radius:12px">
+        {% for k, v in draft.fields.items() %}
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--hairline-soft)">
+          <span class="muted" style="font-size:13px">{{ k }}</span>
+          <span style="font-size:13px;font-weight:500">{{ v }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="margin-top:16px;font-size:12px;color:var(--tertiary-label)">
+      创建时间：{{ draft.created_at }}
+    </div>
+  </div>
+</div>
+
+<div id="submit-result" style="margin-top:16px"></div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function submitDraft(id) {
+  if (!confirm('确认将此草稿提交到 VIIM？')) return;
+  fetch('/api/draft/' + id + '/submit', {method: 'POST'})
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        alert('✓ 提交成功：' + (data.key || ''));
+        window.location.href = '/history';
+      } else {
+        alert('✗ 提交失败：' + (data.error || '未知错误'));
+      }
+    })
+    .catch(function(e) {
+      alert('✗ 请求失败：' + e.message);
+    });
+}
+
+function deleteDraft(id) {
+  if (!confirm('删除该草稿？删除后不可恢复。')) return;
+  fetch('/api/history/delete', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({key: 'DRAFT-' + id})
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) {
+      window.location.href = '/history';
+    } else {
+      alert('✗ 删除失败：' + (d.error || '未知错误'));
+    }
+  }).catch(function(e) {
+    alert('✗ 请求失败：' + e.message);
+  });
+}
+</script>
+{% endblock %}

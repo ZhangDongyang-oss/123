@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}FC 可行性分析（灯光）{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css?v=20260813">
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+  <script src="/static/img-tools.js" defer></script>
+  <script src="/static/login-gate.js" defer></script>
+  {% block head_extra %}{% endblock %}
+  <style>
+  .lightbox { display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.85); justify-content:center; align-items:center; cursor:pointer; }
+  .lightbox img { max-width:92vw; max-height:92vh; border-radius:8px; box-shadow:0 8px 40px rgba(0,0,0,0.5); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <a href="/" class="logo" aria-label="回到首页"><img src="/static/mi-logo.png" alt="某车企"></a>
+      <div>
+        <h1>FC 可行性分析</h1>
+        <p class="subtitle">灯光 · 问题提醒与跟踪</p>
+      </div>
+    </div>
+    {% set active = active|default('home') %}
+    <nav class="tabs">
+      <a href="/" class="tab" title="导引页">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+        导引页
+      </a>
+      <a href="/ask" class="tab {% if active == 'home' %}tab-active{% endif %}">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6M12 22a8 8 0 0 0 8-8h-4M4 14a8 8 0 0 0 8 8"/><circle cx="12" cy="12" r="2.5"/></svg>
+        问一下
+      </a>
+      <a href="/new" class="tab {% if active == 'new' %}tab-active{% endif %}">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z"/></svg>
+        提工单
+      </a>
+      <a href="/history" class="tab {% if active == 'history' %}tab-active{% endif %}">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        工作台
+      </a>
+<a href="/reminders" class="tab {% if active == 'reminders' %}tab-active{% endif %}">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        提醒
+      </a>
+      <a href="/feedback" class="tab {% if active == 'feedback' %}tab-active{% endif %}">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z"/><path d="M2 2l7.5 7.5"/><path d="M14.5 14.5L22 22"/></svg>
+        反馈学习
+      </a>
+      <div class="topbar-meta">
+        <button class="tab" id="theme-toggle" onclick="toggleTheme()" title="切换深色/浅色模式">
+          <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+        <a href="/account" class="tab {% if active == 'account' %}tab-active{% endif %}" id="account-name">
+          <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          账号
+        </a>
+      </div>
+    </nav>
+    {% block topbar_extra %}{% endblock %}
+  </header>
+
+  <main class="layout">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% include "viim_detail_modal.html" %}
+  <div id="lightbox" class="lightbox" onclick="closeLightbox()"><img id="lightbox-img" src=""></div>
+  <script>
+  // Theme toggle
+  function toggleTheme() {
+    var html = document.documentElement;
+    var isDark = html.classList.contains('dark');
+    html.classList.toggle('dark', !isDark);
+    localStorage.setItem('fc-theme', isDark ? 'light' : 'dark');
+  }
+  // Restore theme
+  (function() {
+    var saved = localStorage.getItem('fc-theme');
+    if (saved === 'dark') document.documentElement.classList.add('dark');
+  })();
+
+  // VIIM Detail Modal
+  function openViimDetail(key) {
+    var modal = document.getElementById('viim-detail-modal');
+    var keyEl = document.getElementById('viim-detail-key');
+    var summaryEl = document.getElementById('viim-detail-summary');
+    var bodyEl = document.getElementById('viim-detail-body');
+
+    if (!modal) { console.error('viim-detail-modal not found'); return; }
+
+    keyEl.textContent = key;
+    summaryEl.textContent = '加载中…';
+    bodyEl.innerHTML = '<div style="text-align:center;padding:24px"><svg class="icon spin" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--system-blue)" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg><p class="muted" style="margin-top:8px">正在加载详情…</p></div>';
+    modal.style.display = 'flex';
+
+    fetch('/api/viim-detail/' + encodeURIComponent(key))
+      .then(function(r) {
+        if (!r.ok) {
+          return r.json().then(function(d) { throw new Error(d.error || 'HTTP ' + r.status); }).catch(function(e) { throw e; });
+        }
+        return r.json();
+      })
+      .then(function(data) {
+        if (data.error) {
+          summaryEl.textContent = '';
+          bodyEl.innerHTML = '<div style="text-align:center;padding:24px"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--system-red)" stroke-width="1.8" style="margin-bottom:12px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><p style="color:var(--system-red);font-weight:500">' + escapeHtml(data.error) + '</p><p class="muted" style="margin-top:8px;font-size:13px">请确认 VIIM Token 是否有效 <a href="/account">去设置 →</a></p></div>';
+          return;
+        }
+        summaryEl.textContent = data.summary || '';
+        var html = '';
+
+        html += '<div class="detail-section"><h4>基本信息</h4><div class="detail-kv">';
+        html += field('状态', data.status);
+        html += field('优先级', data.priority);
+        html += field('负责人', data.assignee);
+        html += field('报告人', data.reporter);
+        html += field('解决状态', data.resolution);
+        html += field('创建时间', data.created);
+        html += field('更新时间', data.updated);
+        html += '</div></div>';
+
+        if (data.description) {
+          html += '<div class="detail-section"><h4>问题描述</h4>';
+          html += '<div style="white-space:pre-wrap;font-size:13px;line-height:1.6;color:var(--secondary-label)">' + escapeHtml(data.description) + '</div></div>';
+        }
+
+        if (data.attachments && data.attachments.length > 0) {
+          html += '<div class="detail-section"><h4>附件 (' + data.attachments.length + ')</h4><div class="attachments-grid">';
+          data.attachments.forEach(function(a) {
+            if (a.mimeType && a.mimeType.startsWith('image/')) {
+              html += '<img src="' + a.url + '" alt="' + escapeHtml(a.filename) + '" onclick="window.open(this.src,\'_blank\')">';
+            } else {
+              html += '<a href="' + a.url + '" target="_blank">' + escapeHtml(a.filename) + '</a>';
+            }
+          });
+          html += '</div></div>';
+        }
+
+        if (data.comments && data.comments.length > 0) {
+          html += '<div class="detail-section"><h4>最新评论</h4>';
+          data.comments.forEach(function(c) {
+            html += '<div class="comment-card">';
+            html += '<div class="comment-meta">' + escapeHtml(c.author) + ' · ' + c.created + '</div>';
+            html += '<div class="comment-body">' + escapeHtml(c.body) + '</div>';
+            html += '</div>';
+          });
+          html += '</div>';
+        }
+
+        html += '<div style="margin-top:16px"><a href="' + data.url + '" target="_blank" class="btn-secondary" style="text-decoration:none">在 VIIM 中打开 →</a></div>';
+
+        bodyEl.innerHTML = html;
+      })
+      .catch(function(e) {
+        summaryEl.textContent = '';
+        bodyEl.innerHTML = '<div style="text-align:center;padding:24px"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--system-red)" stroke-width="1.8" style="margin-bottom:12px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><p style="color:var(--system-red);font-weight:500">加载失败</p><p class="muted" style="margin-top:8px;font-size:13px">' + escapeHtml(e.message) + '</p><p class="muted" style="margin-top:4px;font-size:12px">请检查 VIIM Token 是否有效 <a href="/account">去设置 →</a></p></div>';
+      });
+  }
+
+  function closeViimDetail() {
+    document.getElementById('viim-detail-modal').style.display = 'none';
+  }
+
+  // Local case detail（本地案例，无 VIIM 工单链接）
+  function openLocalDetail(key) {
+    var data = (window.__LOCAL_HITS || {})[key];
+    if (!data) return;
+    var modal = document.getElementById('viim-detail-modal');
+    var keyEl = document.getElementById('viim-detail-key');
+    var summaryEl = document.getElementById('viim-detail-summary');
+    var bodyEl = document.getElementById('viim-detail-body');
+    if (!modal) return;
+    keyEl.textContent = data.key || '';
+    summaryEl.textContent = data.summary || '';
+    var html = '';
+    html += '<div class="detail-section"><h4>基本信息</h4><div class="detail-kv">';
+    html += field('状态', data.status);
+    html += field('区域', data.area);
+    html += field('问题类型', data.problem_type);
+    html += field('负责人', data.responsible);
+    html += field('项目', data.project);
+    if (data.score != null) html += field('匹配度', Math.round((data.score || 0) * 100) + '%');
+    html += '</div></div>';
+    if (data.solution) {
+      html += '<div class="detail-section"><h4>解决方案</h4><div style="white-space:pre-wrap;font-size:13px;line-height:1.6;color:var(--secondary-label)">' + escapeHtml(data.solution) + '</div></div>';
+    }
+    if (data.root_cause) {
+      html += '<div class="detail-section"><h4>根因分析</h4><div style="white-space:pre-wrap;font-size:13px;line-height:1.6;color:var(--secondary-label)">' + escapeHtml(data.root_cause) + '</div></div>';
+    }
+    if (data.keywords && data.keywords.length) {
+      html += '<div class="detail-section"><h4>关键词</h4><div style="display:flex;flex-wrap:wrap;gap:6px">';
+      data.keywords.forEach(function(k) { html += '<span class="pill">' + escapeHtml(k) + '</span>'; });
+      html += '</div></div>';
+    }
+    var imgs = (data.problem_images || []).concat(data.fix_images || []);
+    if (imgs.length) {
+      html += '<div class="detail-section"><h4>相关图片 (' + imgs.length + ')</h4><div class="attachments-grid">';
+      imgs.forEach(function(u) { if (u) html += '<img src="' + u + '" onclick="openLightbox(this.src)">'; });
+      html += '</div></div>';
+    }
+    html += '<div style="margin-top:16px;font-size:12px;color:var(--secondary-label)">本地案例 · 无 VIIM 工单链接</div>';
+    bodyEl.innerHTML = html;
+    modal.style.display = 'flex';
+  }
+
+  function field(label, value) {
+    if (!value) return '';
+    return '<div class="detail-field"><dt>' + label + '</dt><dd>' + escapeHtml(value) + '</dd></div>';
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Lightbox (unified)
+  function openLightbox(url) {
+    var lb = document.getElementById('lightbox');
+    var img = document.getElementById('lightbox-img');
+    img.setAttribute('src', url);
+    lb.style.display = 'flex';
+  }
+  function closeLightbox() {
+    var lb = document.getElementById('lightbox');
+    var img = document.getElementById('lightbox-img');
+    lb.style.display = 'none';
+    img.removeAttribute('src');
+  }
+
+  // ESC to close modals
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeViimDetail(); closeLightbox(); }
+  });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% set active = 'account' %}
+{% block title %}账号 · FC 可行性分析（灯光）{% endblock %}
+
+{% block content %}
+<section class="hero" style="padding-bottom:16px;margin-bottom:12px">
+  <span class="text-eyebrow">Account</span>
+  <h2>账号设置</h2>
+  <p class="hero-sub">管理你的 VIIM Token 和账号信息。</p>
+</section>
+
+<div class="card">
+  <div class="card-body">
+    <div class="form-group">
+      <label class="form-label" for="token">VIIM Access Token</label>
+      <input type="password" class="form-input" id="token" name="token" placeholder="粘贴你的 Token" value="{{ token|default('') }}">
+      <p class="form-hint">Token 仅存储在服务端，不会泄露给第三方。</p>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-primary" onclick="saveToken()">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        保存 Token
+      </button>
+      <button type="button" class="btn-ghost" onclick="clearToken()">
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        清除
+      </button>
+    </div>
+
+    <div id="token-status" class="login-gate__state" style="margin-top:16px;display:none"></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="card-body">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:12px">使用统计</h3>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+      <div style="padding:16px;background:var(--bg-surface);border-radius:12px;text-align:center">
+        <div style="font-size:28px;font-weight:700;font-family:ui-monospace,monospace;color:var(--system-blue)">{{ (stats|default({})).total|default(0) }}</div>
+        <div class="muted" style="font-size:12px;margin-top:4px">分析次数</div>
+      </div>
+      <div style="padding:16px;background:var(--bg-surface);border-radius:12px;text-align:center">
+        <div style="font-size:28px;font-weight:700;font-family:ui-monospace,monospace;color:var(--system-green)">{{ (stats|default({})).drafts_created|default(0) }}</div>
+        <div class="muted" style="font-size:12px;margin-top:4px">工单创建</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function saveToken() {
+  var token = document.getElementById('token').value.trim();
+  if (!token) return;
+
+  var status = document.getElementById('token-status');
+  status.style.display = 'block';
+  status.className = 'login-gate__state';
+  status.textContent = '验证中…';
+
+  fetch('/api/set-token', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({token: token})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      status.className = 'login-gate__state login-gate__state--success';
+      status.textContent = '✓ Token 已保存，用户：' + (data.user && data.user.name || '未知');
+    } else {
+      status.className = 'login-gate__state login-gate__state--error';
+      status.textContent = '✗ ' + (data.error || '验证失败');
+    }
+  })
+  .catch(function(e) {
+    status.className = 'login-gate__state login-gate__state--error';
+    status.textContent = '✗ 请求失败：' + e.message;
+  });
+}
+
+function clearToken() {
+  fetch('/api/clear-token', {method: 'POST'})
+  .then(function() {
+    document.getElementById('token').value = '';
+    var status = document.getElementById('token-status');
+    status.style.display = 'block';
+    status.className = 'login-gate__state';
+    status.textContent = 'Token 已清除';
+  });
+}
+</script>
+{% endblock %}

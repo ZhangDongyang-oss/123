@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>外后视镜建模可视化 — GB 15084 III 类</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/flatly/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-3.0.0.min.js"></script>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    .wrap { display: flex; height: 100vh; }
+    #plot { flex: 1; }
+    .panel { width: 380px; overflow-y: auto; padding: 16px 20px; border-left: 1px solid #ddd; background: #fafafa; }
+    .panel h4 { margin-top: 0; }
+    .panel h5 { margin-top: 18px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
+    .swatch { width: 22px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+    .verdict { padding: 8px 12px; border-radius: 6px; font-weight: 600; margin: 8px 0; }
+    .verdict.pass { background: #d4edda; color: #155724; }
+    .verdict.fail { background: #f8d7da; color: #721c24; }
+    .note { font-size: 12px; color: #666; line-height: 1.5; }
+    table { font-size: 12px; width: 100%; }
+    td { padding: 2px 4px; vertical-align: top; }
+    td:first-child { color: #555; width: 45%; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div id="plot"></div>
+  <div class="panel">
+    <h4>外后视镜建模可视化</h4>
+    <div class="note">GB 15084-2022 III 类凸球面镜 · 测试场景 (大帽面 PASS / 小帽面 FAIL 对照)</div>
+
+    <h5>校核结果</h5>
+    <div id="verdict"></div>
+    <table id="verdict-tbl"></table>
+
+    <h5>几何实体</h5>
+    <table>
+      <tr><td>球心 C</td><td>凸球面镜球心 (镜面后方 R 处)</td></tr>
+      <tr><td>半径 R</td><td>球面曲率半径 (校核 1260mm 级)</td></tr>
+      <tr><td>帽面 cap</td><td>球面上切下的反射面 (半透明蓝)</td></tr>
+      <tr><td>轮廓 outline</td><td>反射面边界点 (粗线 + 点)</td></tr>
+      <tr><td>小帽 m0</td><td>对照: 小帽面盖不住 → FAIL (橙虚线)</td></tr>
+      <tr><td>法线 n̂</td><td>帽心外法线, 指向眼点侧 (红箭头)</td></tr>
+      <tr><td>眼点 E</td><td>驾驶员中心眼 (黑点)</td></tr>
+      <tr><td>旋转轴</td><td>Y 轴, 上下翻转 ±3° 调节 (绿线)</td></tr>
+      <tr><td>折叠轴</td><td>Z 轴, 水平折叠, 引擎不建模 (灰线)</td></tr>
+    </table>
+
+    <h5>视野三角形 (竖直)</h5>
+    <table>
+      <tr><td>近区 near</td><td>X=眼后4m, 1m 宽, 底贴地顶至镜高 (绿面)</td></tr>
+      <tr><td>远区 far</td><td>X=眼后20m, 4m 宽 (蓝面)</td></tr>
+      <tr><td>判定</td><td>三边采样点全可见 → pass</td></tr>
+    </table>
+
+    <h5>反射光线</h5>
+    <div class="note">眼点 → 镜面反射点 P → 地面目标 Q。<br>近区射线 (浅绿) / 远区射线 (浅蓝)。<br>P 须在反射面内且距边界 &gt;3mm。</div>
+
+    <h5>图例</h5>
+    <div id="legend"></div>
+
+    <h5>说明</h5>
+    <div class="note">
+      图中轴线为<strong>物理模型</strong>: 旋转=Y (上下翻转, ±3° 搜索绕此轴), 折叠=Z (FOV 校核无关, 不建模)。<br>
+      单元测试内部用 Z 测旋转机构几何; 真实数据将用 Y (待 3DE 校核镜体坐标系是否=整车系)。<br>
+      鼠标拖拽旋转, 滚轮缩放。双击空白复位视角。
+    </div>
+  </div>
+</div>
+
+<script>
+// 数据文件由 ?data= 指定, 默认测试场景; 真实镜子用 ?data=exterior-viz-real-data.js
+const dataFile = new URLSearchParams(location.search).get('data') || 'exterior-viz-data.js';
+const s = document.createElement('script');
+s.src = dataFile;
+s.onload = () => render();
+s.onerror = () => { document.getElementById('plot').innerHTML =
+  '<div style="padding:24px;color:#c00">数据加载失败: ' + dataFile + '<br>请先运行 node engine/exterior/verify-real.js</div>'; };
+document.head.appendChild(s);
+
+function render() {
+const D = window.VIZ_DATA;
+const M = D.mirror;
+
+// ── 工具 ──
+const line3 = (pts, color, width, dash) => ({
+  type: 'scatter3d', mode: 'lines',
+  x: pts.map(p => p[0]), y: pts.map(p => p[1]), z: pts.map(p => p[2]),
+  line: { color, width, dash: dash || 'solid' }, showlegend: false, hoverinfo: 'text',
+});
+const pts3 = (pts, color, size, name, text) => ({
+  type: 'scatter3d', mode: 'markers',
+  x: pts.map(p => p[0]), y: pts.map(p => p[1]), z: pts.map(p => p[2]),
+  marker: { color, size: size || 6 },
+  name: name || '', text: text || pts.map((_, i) => name + (pts.length > 1 ? ' #' + i : '')),
+  hoverinfo: 'text', showlegend: !!name,
+});
+
+const traces = [];
+
+// 1. 地面 (半透明)
+traces.push({
+  type: 'mesh3d', ...D.groundMesh, color: '#e8e8e8', opacity: 0.4,
+  name: '地面', showlegend: false, hoverinfo: 'name',
+});
+
+// 2. 帽面 (半透明蓝)
+traces.push({
+  type: 'mesh3d', x: M.capMesh.x, y: M.capMesh.y, z: M.capMesh.z,
+  i: M.capMesh.i, j: M.capMesh.j, k: M.capMesh.k,
+  color: '#4a90d9', opacity: 0.35, name: '反射面(帽)', showlegend: false, hoverinfo: 'name',
+  lighting: { ambient: 0.9, diffuse: 0.5, specular: 0.1 },
+});
+
+// 3. 大轮廓 outline (粗线 + 点)
+const ol = M.outline.concat([M.outline[0]]);
+traces.push(line3(ol, '#1a5490', 5));
+traces.push(pts3(M.outline, '#1a5490', 7, '轮廓点'));
+
+// 4. 小帽 m0 (对照, 橙虚线)
+const ols = M.outlineSmall.concat([M.outlineSmall[0]]);
+traces.push(line3(ols, '#ff9500', 3, 'dash'));
+
+// 5. 球心 C, 帽心 capCenter
+traces.push(pts3([M.sphereCenter], '#c0392b', 8, '球心 C'));
+traces.push(pts3([M.capCenter], '#27ae60', 7, '帽心'));
+
+// 6. 法线 n̂ (帽心 → 外, 红箭头)
+const nTip = [M.capCenter[0] + M.nHat[0] * 0.3, M.capCenter[1] + M.nHat[1] * 0.3, M.capCenter[2] + M.nHat[2] * 0.3];
+traces.push(line3([M.capCenter, nTip], '#c0392b', 4));
+
+// 7. 旋转轴 Y (绿) + 折叠轴 Z (灰)
+traces.push(line3(D.rotationAxis, '#27ae60', 4));
+traces.push(line3(D.foldAxis, '#999', 3, 'dash'));
+traces.push(pts3([M.turretAxisPoint], '#27ae60', 6, '轴线原点 p1'));
+
+// 8. 眼点 E
+traces.push(pts3([D.eye], '#111', 8, '眼点 E'));
+
+// 9. 车门最外点 (竖线标记)
+traces.push(line3([[E_X() - 1, D.doorOuterY, D.groundZ], [E_X() + 22, D.doorOuterY, D.groundZ]], '#7f8c8d', 2, 'dot'));
+
+// 10. 三角形 near (绿) / far (蓝)
+function triMesh(tri, color) {
+  const [A, B, T] = tri.vertices;
+  return {
+    type: 'mesh3d',
+    x: [A[0], B[0], T[0]], y: [A[1], B[1], T[1]], z: [A[2], B[2], T[2]],
+    i: [0], j: [1], k: [2], color, opacity: 0.45, showlegend: false, hoverinfo: 'text',
+    text: tri.name + ' ' + (tri.pass ? 'PASS' : 'FAIL'),
+  };
+}
+function triEdge(tri, color) {
+  const v = tri.vertices.concat([tri.vertices[0]]);
+  return line3(v, color, 4);
+}
+traces.push(triMesh(D.triangles[0], '#2ecc71'));
+traces.push(triEdge(D.triangles[0], '#27ae60'));
+traces.push(triMesh(D.triangles[1], '#3498db'));
+traces.push(triEdge(D.triangles[1], '#2980b9'));
+
+// 11. 反射光线 eye→P→Q
+function rayTraces(rays, color) {
+  for (const r of rays) {
+    traces.push(line3([r.eye, r.mirrorPoint, r.target], color, 2));
+    traces.push(pts3([r.mirrorPoint], color, 4));
+  }
+}
+rayTraces(D.raysNear, '#82e0aa');
+rayTraces(D.raysFar, '#85c1e9');
+
+function E_X() { return D.eye[0]; }
+
+// ── Layout ──
+const layout = {
+  scene: {
+    xaxis: { title: 'X (后方→)', gridcolor: '#ddd' },
+    yaxis: { title: 'Y (右→)', gridcolor: '#ddd' },
+    zaxis: { title: 'Z (上→)', gridcolor: '#ddd' },
+    aspectmode: 'data',
+    camera: { eye: { x: 1.6, y: -1.8, z: 1.0 } },
+  },
+  margin: { l: 0, r: 0, t: 0, b: 0 },
+  paper_bgcolor: 'white',
+};
+Plotly.newPlot('plot', traces, layout, { responsive: true });
+
+// ── 侧栏填充 ──
+const V = D.verify;
+const pass = V.mirrorPass;
+document.getElementById('verdict').innerHTML =
+  `<div class="verdict ${pass ? 'pass' : 'fail'}">mirrorPass = ${pass ? '✅ PASS' : '❌ FAIL'}</div>`;
+document.getElementById('verdict-tbl').innerHTML =
+  `<tr><td>近区 near</td><td>${V.nearPass ? '✅ PASS' : '❌ FAIL'}</td></tr>` +
+  `<tr><td>远区 far</td><td>${V.farPass ? '✅ PASS' : '❌ FAIL'}</td></tr>` +
+  `<tr><td>眼点 X</td><td>${D.eye[0].toFixed(3)} m</td></tr>` +
+  `<tr><td>近区 X</td><td>${(D.eye[0] + 4).toFixed(3)} m (眼后4m, 1m宽)</td></tr>` +
+  `<tr><td>远区 X</td><td>${(D.eye[0] + 20).toFixed(3)} m (眼后20m, 4m宽)</td></tr>` +
+  `<tr><td>地面 Z</td><td>${D.groundZ.toFixed(3)} m</td></tr>` +
+  `<tr><td>车门最外 Y</td><td>${D.doorOuterY.toFixed(3)} m</td></tr>` +
+  `<tr><td>球心 C</td><td>[${M.sphereCenter.map(v => v.toFixed(3)).join(', ')}]</td></tr>` +
+  `<tr><td>半径 R</td><td>${M.radius.toFixed(3)} m</td></tr>`;
+
+const legend = [
+  ['#4a90d9', '反射面 (球面帽)'],
+  ['#1a5490', '大轮廓 (PASS 帽)'],
+  ['#ff9500', '小帽 m0 (FAIL 对照)'],
+  ['#c0392b', '球心 C / 法线 n̂'],
+  ['#27ae60', '帽心 / 旋转轴 Y / 近区'],
+  ['#3498db', '远区三角形'],
+  ['#111', '眼点 E'],
+  ['#999', '折叠轴 Z (不建模)'],
+  ['#82e0aa', '近区反射光线'],
+  ['#85c1e9', '远区反射光线'],
+];
+document.getElementById('legend').innerHTML = legend.map(([c, t]) =>
+  `<div class="legend-item"><span class="swatch" style="background:${c}"></span>${t}</div>`).join('');
+}
+</script>
+</body>
+</html>

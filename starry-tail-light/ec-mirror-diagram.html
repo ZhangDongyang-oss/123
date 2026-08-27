@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>外后视镜EC镜片原理解释图</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1200px;
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0d1225 100%);
+    color: #e0e6ff;
+    padding: 40px 50px;
+  }
+
+  .title {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  .title h1 {
+    font-size: 28px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 2px;
+  }
+  .title .subtitle {
+    font-size: 14px;
+    color: #8892b0;
+    margin-top: 8px;
+  }
+
+  .diagram-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  /* 车顶俯视图 */
+  .top-view {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(96, 165, 250, 0.2);
+    border-radius: 16px;
+    padding: 30px;
+    position: relative;
+  }
+  .top-view h2 {
+    text-align: center;
+    font-size: 16px;
+    color: #60a5fa;
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+  }
+
+  .car-scene {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    position: relative;
+    height: 280px;
+  }
+
+  .arrow-up {
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 13px;
+    color: #60a5fa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .arrow-up svg { width: 20px; height: 24px; }
+
+  /* 左侧镜组 */
+  .mirror-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 280px;
+  }
+
+  .mirror-box {
+    width: 90px;
+    height: 55px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    position: relative;
+  }
+  .mirror-box.ec {
+    background: linear-gradient(135deg, #1e3a5f, #2d5a8e);
+    border: 2px solid #60a5fa;
+    box-shadow: 0 0 20px rgba(96,165,250,0.3), inset 0 0 15px rgba(96,165,250,0.1);
+    color: #60a5fa;
+  }
+  .mirror-box.no-ec {
+    background: rgba(255,255,255,0.06);
+    border: 2px solid #4a4f6a;
+    color: #6a7090;
+  }
+  .mirror-box .ec-label {
+    font-size: 11px;
+    display: block;
+    margin-top: 2px;
+    opacity: 0.7;
+  }
+
+  .distance-line {
+    width: 2px;
+    height: 50px;
+    margin: 10px 0;
+    position: relative;
+  }
+  .distance-line.left {
+    background: linear-gradient(to bottom, #60a5fa, #3b82f6);
+    box-shadow: 0 0 6px rgba(96,165,250,0.4);
+  }
+  .distance-line.right {
+    background: linear-gradient(to bottom, #4a4f6a, #3a3f5a);
+  }
+  .distance-line::after {
+    content: attr(data-dist);
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .distance-line.left::after { color: #60a5fa; }
+  .distance-line.right::after { color: #6a7090; }
+
+  .tag {
+    font-size: 13px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-top: 10px;
+    font-weight: 600;
+  }
+  .tag.near {
+    background: rgba(96,165,250,0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(96,165,250,0.3);
+  }
+  .tag.far {
+    background: rgba(255,255,255,0.05);
+    color: #6a7090;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* 中间驾驶员 */
+  .driver-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 200px;
+  }
+  .car-top {
+    width: 160px;
+    height: 200px;
+    position: relative;
+  }
+  .car-top svg { width: 100%; height: 100%; }
+
+  .driver-icon {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+  }
+  .driver-icon .icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 0 15px rgba(245,158,11,0.4);
+  }
+  .driver-icon .label {
+    font-size: 11px;
+    color: #f59e0b;
+    margin-top: 4px;
+    white-space: nowrap;
+  }
+
+  /* 光线示意 */
+  .light-effect {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 280px;
+  }
+  .light-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+  .light-desc {
+    text-align: center;
+    line-height: 1.7;
+    font-size: 13px;
+    max-width: 220px;
+  }
+  .light-desc.strong { color: #f87171; }
+  .light-desc.weak { color: #6a7090; }
+
+  /* 眩光对比 */
+  .glare-section {
+    width: 100%;
+    display: flex;
+    gap: 24px;
+  }
+  .glare-card {
+    flex: 1;
+    border-radius: 14px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glare-card.high {
+    background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(245,158,11,0.08));
+    border: 1px solid rgba(239,68,68,0.25);
+  }
+  .glare-card.low {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .glare-card h3 {
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+  .glare-card.high h3 { color: #f87171; }
+  .glare-card.low h3 { color: #6a7090; }
+
+  .glare-meter {
+    height: 8px;
+    border-radius: 4px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glare-meter.bg-high {
+    background: rgba(239,68,68,0.15);
+  }
+  .glare-meter.bg-low {
+    background: rgba(255,255,255,0.06);
+  }
+  .glare-meter .fill {
+    height: 100%;
+    border-radius: 4px;
+  }
+  .glare-meter .fill.high-fill {
+    width: 85%;
+    background: linear-gradient(90deg, #ef4444, #f59e0b);
+    box-shadow: 0 0 8px rgba(239,68,68,0.4);
+  }
+  .glare-meter .fill.low-fill {
+    width: 30%;
+    background: linear-gradient(90deg, #4a4f6a, #5a5f7a);
+  }
+
+  .glare-card ul {
+    list-style: none;
+    font-size: 13px;
+    line-height: 2;
+  }
+  .glare-card.high ul { color: #fca5a5; }
+  .glare-card.low ul { color: #8892b0; }
+  .glare-card ul li::before {
+    content: "●";
+    margin-right: 8px;
+    font-size: 8px;
+  }
+
+  /* 物理定律 */
+  .law-box {
+    width: 100%;
+    background: linear-gradient(135deg, rgba(167,139,250,0.08), rgba(96,165,250,0.06));
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 14px;
+    padding: 22px 30px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .law-icon {
+    font-size: 36px;
+    flex-shrink: 0;
+  }
+  .law-content h3 {
+    font-size: 15px;
+    color: #a78bfa;
+    margin-bottom: 8px;
+  }
+  .law-content p {
+    font-size: 13px;
+    color: #8892b0;
+    line-height: 1.8;
+  }
+  .law-content .formula {
+    display: inline-block;
+    background: rgba(167,139,250,0.12);
+    padding: 3px 14px;
+    border-radius: 6px;
+    font-family: "Consolas", "Courier New", monospace;
+    color: #c4b5fd;
+    font-size: 14px;
+    margin: 6px 0;
+  }
+  .law-content .highlight {
+    color: #60a5fa;
+    font-weight: 600;
+  }
+
+  /* 结论 */
+  .conclusion {
+    width: 100%;
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(90deg, rgba(96,165,250,0.08), rgba(167,139,250,0.08), rgba(96,165,250,0.08));
+    border-radius: 12px;
+    border: 1px solid rgba(96,165,250,0.15);
+  }
+  .conclusion p {
+    font-size: 15px;
+    color: #a0b4d8;
+    line-height: 1.8;
+  }
+  .conclusion .key { color: #60a5fa; font-weight: 700; }
+  .conclusion .val { color: #f87171; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="title">
+  <h1>外后视镜 EC 镜片为何左侧有、右侧无</h1>
+  <div class="subtitle">Electrochromic Mirror — 原理解释图</div>
+</div>
+
+<div class="diagram-container">
+
+  <!-- 车顶俯视图 -->
+  <div class="top-view">
+    <h2>▎车顶俯视图 (Top View)</h2>
+    <div class="car-scene">
+      <div class="arrow-up">
+        <svg viewBox="0 0 20 24" fill="none"><path d="M10 2 L10 22 M3 9 L10 2 L17 9" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        车头方向
+      </div>
+
+      <!-- 左侧镜 -->
+      <div class="mirror-group">
+        <div class="mirror-box ec">
+          <div>EC 镜片<span class="ec-label">自动防眩</span></div>
+        </div>
+        <div class="distance-line left" data-dist="~0.8 - 1.2 m"></div>
+        <div class="tag near">近侧镜</div>
+        <div class="light-desc strong" style="margin-top:12px;">
+          后方车辆灯光亮度高<br>
+          反射距离短、衰减小<br>
+          <b>眩光刺眼感强</b>
+        </div>
+      </div>
+
+      <!-- 中间车辆 -->
+      <div class="driver-area">
+        <div class="car-top">
+          <svg viewBox="0 0 160 200" fill="none">
+            <!-- 车身轮廓 -->
+            <rect x="30" y="20" width="100" height="170" rx="30" ry="30" fill="rgba(255,255,255,0.04)" stroke="rgba(96,165,250,0.3)" stroke-width="1.5"/>
+            <rect x="42" y="40" width="76" height="50" rx="10" fill="rgba(96,165,250,0.06)" stroke="rgba(96,165,250,0.15)" stroke-width="1"/>
+            <!-- 左后视镜 -->
+            <rect x="8" y="55" width="24" height="16" rx="4" fill="rgba(96,165,250,0.3)" stroke="#60a5fa" stroke-width="1.5"/>
+            <!-- 右后视镜 -->
+            <rect x="128" y="55" width="24" height="16" rx="4" fill="rgba(255,255,255,0.06)" stroke="#4a4f6a" stroke-width="1.5"/>
+          </svg>
+          <div class="driver-icon">
+            <div class="icon">&#x1F9D1;</div>
+            <div class="label">驾驶员</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧镜 -->
+      <div class="mirror-group">
+        <div class="mirror-box no-ec">
+          <div>普通镜片<span class="ec-label">无防眩</span></div>
+        </div>
+        <div class="distance-line right" data-dist="~1.5 - 2.0 m"></div>
+        <div class="tag far">远侧镜</div>
+        <div class="light-desc weak" style="margin-top:12px;">
+          后方车辆灯光衰减大<br>
+          反射距离长、光强低<br>
+          <b>眩光刺眼感弱</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 眩光对比 -->
+  <div class="glare-section">
+    <div class="glare-card high">
+      <h3>左侧镜 — 高眩光</h3>
+      <div class="glare-meter bg-high"><div class="fill high-fill"></div></div>
+      <ul>
+        <li>距离近，反射光强衰减小</li>
+        <li>夜间后车大灯直射，刺眼感强烈</li>
+        <li>驾驶员频繁受干扰，影响安全</li>
+        <li><b>EC 电致变色调暗镜面 → 必需</b></li>
+      </ul>
+    </div>
+    <div class="glare-card low">
+      <h3>右侧镜 — 低眩光</h3>
+      <div class="glare-meter bg-low"><div class="fill low-fill"></div></div>
+      <ul>
+        <li>距离远，光强按距离平方衰减</li>
+        <li>反射到眼睛的光强仅为左侧 1/4</li>
+        <li>刺眼感明显低于左侧</li>
+        <li><b>EC 需求低，出于成本常省略</b></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 物理定律 -->
+  <div class="law-box">
+    <div class="law-icon">&#x1F4A1;</div>
+    <div class="law-content">
+      <h3>核心物理原理 — 平方反比定律</h3>
+      <div class="formula">I &prop; 1 / d&sup2;</div>
+      <p>
+        光照强度与传播距离的平方成反比。右侧镜距离约为左侧的 <span class="highlight">1.5 ~ 2.0 倍</span>，<br>
+        反射到眼睛的光强仅为左侧的 <span class="val">1/4 ~ 1/2</span>，因此右侧眩光问题天然较轻。
+      </p>
+    </div>
+  </div>
+
+  <!-- 结论 -->
+  <div class="conclusion">
+    <p>
+      <span class="key">左侧 EC + 右侧普通</span> 是成本与安全的最优平衡：<br>
+      解决最影响驾驶安全的 <span class="val">左侧高眩光</span> 问题，同时降低不必要的硬件成本。
+    </p>
+  </div>
+
+</div>
+
+</body>
+</html>

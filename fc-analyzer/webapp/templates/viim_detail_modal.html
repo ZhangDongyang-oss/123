@@ -1,0 +1,15 @@
+{# VIIM FC Detail Modal #}
+<div id="viim-detail-modal" class="viim-modal" style="display:none" onclick="if(event.target===this)closeViimDetail()">
+  <div class="viim-modal__content">
+    <div class="viim-modal__head">
+      <div>
+        <span id="viim-detail-key" class="viim-modal__key"></span>
+        <span id="viim-detail-summary" class="viim-modal__summary"></span>
+      </div>
+      <button class="viim-modal__close" onclick="closeViimDetail()">&times;</button>
+    </div>
+    <div id="viim-detail-body" class="viim-modal__body">
+      <p class="muted">加载中…</p>
+    </div>
+  </div>
+</div>

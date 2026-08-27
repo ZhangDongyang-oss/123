@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+{% set active = 'new' %}
+{% block title %}智能核对 · FC 可行性分析（灯光）{% endblock %}
+
+{% block topbar_extra %}
+<div class="topbar-meta">
+  <a href="/new" class="btn-secondary">
+    <svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    返回
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if not fields %}
+<section class="hero hero--center">
+  <span class="text-eyebrow">Review</span>
+  <h2>智能核对</h2>
+  <p class="hero-sub">粘贴问题描述，AI 抽取字段、检索案例并给出工程师建议，核对后一键提交 VIIM。</p>
+  <form method="post" action="/review" style="max-width:720px;margin:12px auto 0;text-align:left">
+    <textarea class="form-input" name="description" rows="4" placeholder="例如：尾灯除霜开口处 IP 面不满足除霜需求，附壁…" required></textarea>
+    <div style="margin-top:12px;text-align:center">
+      <button type="submit" class="btn-primary">开始核对 →</button>
+    </div>
+  </form>
+</section>
+{% else %}
+
+<script id="init-payload" type="application/json">{{ payload | tojson }}</script>
+{% set BD_LBL = {'text': '文本', 'symptom': '症状', 'part': '零件', 'area': '区域', 'type': '类型', 'condition': '条件', 'relation': '关系', 'optical': '光学', 'standard': '法规'} %}
+{% set PROJECTS = [['DEMODIR', '车型C-DIR']] %}
+{% set CARS = ['车型C-L', '车型C-车型J', '车型C-车型H', '车型C-车型H-RHD', '车型F-25C', '车型C-U-26D-赛道版', '车型C-U-26D-市场版', '车型C-车型I-EU'] %}
+{% set AREAS = ['EXT-Front End', 'EXT-Rear End', 'EXT-Side&Roof&Door', 'EXT-Global', 'INT-IP&SW', 'INT-Seat&Floor', 'INT-Roof&Pillar', 'INT-Door Trim', 'INT-Luggage Compartment', 'INT-Global', 'INT-Console'] %}
+{% set DEPTS = ['E&E', 'Design', 'Body-Ext. Trim', 'Body-Int. Trim', 'Body-BIW', 'Body-Closures', 'Body-IAG', 'Chassis', 'ME', 'VI-Aero', 'VI-Ergonomics', 'VI-NVH', 'VI-Package', 'VI-PQ', 'VI-Safety', 'VI-材料（VI – Material）', 'VI-Comfortable', '虚拟AUDIT（Virtual Audit）', '尺寸工程（DTS – Dimensional Target Setting）'] %}
+{% set SEVS = ['S-非常重要（安全/法规/抛锚）', 'A-重要', 'B-一般重要', 'C-一般', 'D-不重要'] %}
+{% set URGS = [['紧急（Urgent）', '紧急'], ['非紧急（Non-urgent）', '非紧急']] %}
+{% set PHASES = ['CAS0', 'CAS1', 'CAS2', 'CAS3', 'CAS4', 'AA1', 'AA2', 'V0', 'V1', 'V2'] %}
+{% set TIS = ['R', 'G', 'No TI'] %}
+
+<div class="review-grid">
+
+  <!-- ═══ 左栏：附件 + 置信度 + AI 字段 ═══ -->
+  <div class="review-col review-col--main">
+
+    <div class="card">
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <label class="btn-secondary btn-sm" style="cursor:pointer">
+            <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 8 8.84l-8.59 8.57a2 2 0 0 0 2.83 2.83l9.2-9.19"/></svg>
+            上传现场图
+            <input type="file" accept="image/*" multiple hidden onchange="onFiles(this)">
+          </label>
+          <span id="upload-count" class="muted" style="font-size:12px"></span>
+          <span class="pill badge-human">将作为附件提交</span>
+        </div>
+        <div id="upload-thumbs" class="reco-imgs" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+          <strong style="font-size:14px">AI 综合置信度</strong>
+          <span class="conf-overall">{{ (confidence.overall * 100)|int }}%</span>
+          {% if confidence.overall < 0.6 %}<span class="pill pill-type">建议人工核对</span>{% else %}<span class="pill pill-good">可信度较好</span>{% endif %}
+        </div>
+        <div class="conf-pills">
+          <span class="conf-pill">区域 <b>{{ (confidence.area * 100)|int }}%</b></span>
+          <span class="conf-pill">严重度 <b>{{ (confidence.severity * 100)|int }}%</b></span>
+          <span class="conf-pill">阶段 <b>{{ (confidence.phase * 100)|int }}%</b></span>
+          <span class="conf-pill">紧急 <b>{{ (confidence.urgency * 100)|int }}%</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>AI 识别字段</h3>
+        <button type="button" class="btn-outline btn-sm" onclick="focusReco()">推荐方案
+          <svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+      <div class="card-body">
+        <form id="review-form" onsubmit="return false">
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label">概要</label>
+            <input type="text" class="form-input" name="summary" value="{{ fields.summary or '' }}">
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label">描述</label>
+            <textarea class="form-input" name="description" rows="4">{{ fields.description or '' }}</textarea>
+          </div>
+          <div class="field-grid--4">
+            <div class="form-group"><label class="form-label">项目</label>
+              <input class="form-input" name="viim_project" list="project-options" value="{{ fields.viim_project or '' }}" placeholder="可输入或选择"></div>
+            <div class="form-group"><label class="form-label">车型</label>
+              <input class="form-input" name="viim_car_model" list="car-options" value="{{ fields.viim_car_model or '' }}" placeholder="可输入或选择"></div>
+            <div class="form-group"><label class="form-label">问题所属区域</label>
+              <select class="form-input" name="viim_area">{% for o in AREAS %}<option value="{{ o }}" {% if fields.viim_area == o %}selected{% endif %}>{{ o }}</option>{% endfor %}</select></div>
+            <div class="form-group"><label class="form-label">问题提出部门</label>
+              <select class="form-input" name="viim_department">{% for o in DEPTS %}<option value="{{ o }}" {% if fields.viim_department == o %}selected{% endif %}>{{ o }}</option>{% endfor %}</select></div>
+            <div class="form-group"><label class="form-label">问题严重度</label>
+              <select class="form-input" name="viim_severity">{% for o in SEVS %}<option value="{{ o }}" {% if fields.viim_severity == o %}selected{% endif %}>{{ o }}</option>{% endfor %}</select></div>
+            <div class="form-group"><label class="form-label">紧急程度</label>
+              <select class="form-input" name="viim_urgency">{% for v, l in URGS %}<option value="{{ v }}" {% if fields.viim_urgency == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+            <div class="form-group"><label class="form-label">问题所属阶段</label>
+              <select class="form-input" name="viim_phase">{% for o in PHASES %}<option value="{{ o }}" {% if fields.viim_phase == o %}selected{% endif %}>{{ o }}</option>{% endfor %}</select></div>
+            <div class="form-group"><label class="form-label">问题关闭阶段</label>
+              <select class="form-input" name="viim_next_phase">{% for o in PHASES %}<option value="{{ o }}" {% if fields.viim_next_phase == o %}selected{% endif %}>{{ o }}</option>{% endfor %}</select></div>
+            <div class="form-group"><label class="form-label">问题提出 CAS 号</label><input class="form-input" name="viim_cas_number" value="{{ fields.viim_cas_number or '' }}"></div>
+            <div class="form-group"><label class="form-label">问题关闭 CAS 号</label><input class="form-input" name="viim_close_cas_number" value="{{ fields.viim_close_cas_number or '' }}"></div>
+            <div class="form-group"><label class="form-label">对应 TI 状态</label>
+              <select class="form-input" name="viim_ti_status">{% for o in TIS %}<option value="{{ o }}" {% if fields.viim_ti_status == o %}selected{% endif %}>{{ o }}</option>{% endfor %}</select></div>
+            <div class="form-group"><label class="form-label">对应 TI 件号</label><input class="form-input" name="viim_ti_part_number" value="{{ fields.viim_ti_part_number or '' }}"></div>
+            <div class="form-group"><label class="form-label">问题要求关闭时间</label><input type="date" class="form-input" name="viim_close_date" value="{{ fields.viim_close_date or '' }}"></div>
+            <div class="form-group"><label class="form-label">CAS 计划输出时间</label><input type="date" class="form-input" name="viim_cas_date" value="{{ fields.viim_cas_date or '' }}"></div>
+          </div>
+
+          <div class="form-group" style="margin-top:14px">
+            <label class="form-label">问题对策及方案 <span class="muted" style="font-weight:400">AI 已基于历史相似案例预填，可改</span></label>
+            <textarea class="form-input" name="solution" rows="5">{{ fields.solution or '' }}</textarea>
+          </div>
+          {% if hits %}
+          <p class="src-line">已检索到 {{ hits|length }} 条相似案例：{% for h in hits %}{% if h.url %}<a href="{{ h.url }}" target="_blank">{{ h.key }}</a>{% else %}<a href="javascript:void(0)" onclick="openLocalDetail('{{ h.key }}')">{{ h.key }}</a>{% endif %}(score {{ '%.3f' % h.score }}/{{ '人写' if h.solution_quality == 'human' else 'AI' }}){% if not loop.last %} · {% endif %}{% endfor %}</p>
+          {% endif %}
+
+          <datalist id="project-options">{% for k, l in PROJECTS %}<option value="{{ k }}">{{ l }}</option>{% endfor %}</datalist>
+          <datalist id="car-options">{% for o in CARS %}<option value="{{ o }}"></option>{% endfor %}</datalist>
+
+          <div class="owners-panel">
+            <strong style="font-size:13.5px">责任人（VIIM 强制必填相关责任人完整邮箱）</strong>
+            <div class="field-grid--3" style="margin-top:12px">
+              <div class="form-group"><label class="form-label">总布置责任人</label><input type="email" class="form-input" name="overall_email" placeholder="zhangsan@acme-auto.com" value="{{ fields.overall_email or '' }}"></div>
+              <div class="form-group"><label class="form-label">造型责任人</label><input type="email" class="form-input" name="design_email" placeholder="lisi@acme-auto.com" value="{{ fields.design_email or '' }}"></div>
+              <div class="form-group"><label class="form-label">工程责任人</label><input type="email" class="form-input" name="engineer_email" placeholder="wangwu@acme-auto.com" value="{{ fields.engineer_email or '' }}"></div>
+              <div class="form-group"><label class="form-label">经办人</label><input type="email" class="form-input" name="viim_assignee" placeholder="zhaoliu@acme-auto.com" value="{{ fields.viim_assignee or '' }}"></div>
+              <div class="form-group"><label class="form-label">关联责任人</label><input class="form-input" name="viim_related_owners" placeholder="a@acme-auto.com, b@acme-auto.com" value="{{ fields.viim_related_owners or '' }}"></div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 中栏：推荐方案 ═══ -->
+  <div class="review-col review-col--reco" id="reco-col">
+    <h3 class="review-col__title">推荐方案</h3>
+    {% if hits %}
+    {% set hero = hits[0] %}
+    <article class="reco-case reco-case--hero">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        {% if hero.url %}<a class="reco-hero__key" href="{{ hero.url }}" target="_blank" style="font-family:ui-monospace,monospace;font-weight:700;color:var(--system-blue);text-decoration:none">{{ hero.key }}</a>{% else %}<a class="reco-hero__key" href="javascript:void(0)" onclick="openLocalDetail('{{ hero.key }}')" style="font-family:ui-monospace,monospace;font-weight:700;color:var(--system-blue);text-decoration:none">{{ hero.key }}</a>{% endif %}
+        <span class="reco-score">{{ (hero.score * 100)|int }}<small>%</small></span>
+        {% if hero.solution_quality == 'human' %}<span class="badge badge-human">工程师方案</span>{% endif %}
+        {% if hero.area %}<span class="pill pill-area">{{ hero.area }}</span>{% endif %}
+        {% if hero.status %}<span class="pill">{{ hero.status }}</span>{% endif %}
+      </div>
+      <p class="muted" style="margin:10px 0 0;font-size:13px;line-height:1.55">{{ hero.summary }}</p>
+      {% if hero.solution %}
+      <div class="reco-sol">{{ hero.solution[:220] }}{% if hero.solution|length > 220 %}…{% endif %}</div>
+      {% endif %}
+      {% if hero.problem_images or hero.fix_images or hero.attachments %}
+      <div class="reco-imgs">
+        {% for img in (hero.problem_images or [])[:3] %}<button type="button" class="report-img-btn" data-img="{{ img }}"><img src="{{ img }}" alt="问题图" loading="lazy"></button>{% endfor %}
+        {% for img in (hero.fix_images or [])[:2] %}<button type="button" class="report-img-btn" data-img="{{ img }}"><img src="{{ img }}" alt="整改图" loading="lazy" style="border:2px solid var(--system-green)"></button>{% endfor %}
+        {% for att in (hero.attachments or [])[:3] %}<button type="button" class="report-img-btn" data-img="{{ att.url }}"><img src="{{ att.thumbnail or att.url }}" alt="{{ att.filename }}" loading="lazy" style="border:2px solid var(--system-teal)"></button>{% endfor %}
+      </div>
+      {% endif %}
+      <div class="reco-actions">
+        {% if hero.url %}<a class="btn-primary btn-sm" style="text-decoration:none" href="{{ hero.url }}" target="_blank">VIIM 查看 {{ hero.key }}</a>{% else %}<a class="btn-primary btn-sm" style="text-decoration:none" href="javascript:void(0)" onclick="openLocalDetail('{{ hero.key }}')">查看本地详情 {{ hero.key }}</a>{% endif %}
+        <button type="button" class="btn-secondary btn-sm" data-sol="{{ hero.solution or '' }}" onclick="adoptSolution(this)">采纳为对策</button>
+      </div>
+      {% if hero.breakdown %}
+      <div class="score-pop">
+        <b>吻合度明细</b>
+        {% for k, v in hero.breakdown.items() %}<span><i>{{ BD_LBL.get(k, k) }}</i><em>+{{ v }}</em></span>{% endfor %}
+      </div>
+      {% endif %}
+    </article>
+
+    <div class="reco-grid">
+      {% for h in hits[1:5] %}
+      <article class="reco-case">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          {% if h.url %}<a href="{{ h.url }}" target="_blank" style="font-family:ui-monospace,monospace;font-weight:700;color:var(--system-blue);text-decoration:none">{{ h.key }}</a>{% else %}<a href="javascript:void(0)" onclick="openLocalDetail('{{ h.key }}')" style="font-family:ui-monospace,monospace;font-weight:700;color:var(--system-blue);text-decoration:none">{{ h.key }}</a>{% endif %}
+          <span class="reco-score reco-score--sm">{{ (h.score * 100)|int }}<small>%</small></span>
+          {% if h.status %}<span class="pill" style="font-size:10px">{{ h.status }}</span>{% endif %}
+        </div>
+        <p class="muted" style="margin:8px 0 0;font-size:12.5px;line-height:1.5">{{ h.summary[:60] }}</p>
+        {% if h.solution %}
+        {% set lim = 220 if (h.score or 0) >= 0.6 else 80 %}
+        <div class="reco-sol reco-sol--sm">{{ h.solution[:lim] }}{% if h.solution|length > lim %}…{% endif %}</div>
+        {% endif %}
+        {% if h.problem_images or h.fix_images or h.attachments %}
+        <div class="reco-imgs">
+          {% for img in (h.problem_images or [])[:2] %}<button type="button" class="report-img-btn" data-img="{{ img }}"><img src="{{ img }}" alt="问题图" loading="lazy"></button>{% endfor %}
+          {% for img in (h.fix_images or [])[:1] %}<button type="button" class="report-img-btn" data-img="{{ img }}"><img src="{{ img }}" alt="整改图" loading="lazy" style="border:2px solid var(--system-green)"></button>{% endfor %}
+          {% for att in (h.attachments or [])[:2] %}<button type="button" class="report-img-btn" data-img="{{ att.url }}"><img src="{{ att.thumbnail or att.url }}" alt="{{ att.filename }}" loading="lazy" style="border:2px solid var(--system-teal)"></button>{% endfor %}
+        </div>
+        {% endif %}
+        <div class="reco-actions">
+          <button type="button" class="btn-secondary btn-sm" data-sol="{{ h.solution or '' }}" onclick="adoptSolution(this)">采纳为对策</button>
+        </div>
+        {% if h.breakdown %}
+        <div class="score-pop">
+          <b>吻合度明细</b>
+          {% for k, v in h.breakdown.items() %}<span><i>{{ BD_LBL.get(k, k) }}</i><em>+{{ v }}</em></span>{% endfor %}
+        </div>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card"><div class="card-body"><p class="muted">未找到相似案例，可直接在左侧核对字段后提交。</p></div></div>
+    {% endif %}
+  </div>
+
+  <!-- ═══ 右栏：工程师建议 ═══ -->
+  <div class="review-col review-col--advice">
+    <h3 class="review-col__title">工程师建议</h3>
+    {% if report.modification_directions %}
+    {% for d in report.modification_directions %}
+    <div class="advice-group">
+      <h4>{{ d.verb }}</h4>
+      {% for e in d.examples %}
+      <div class="advice-card">
+        {{ e.snippet }}
+        <div class="src">{{ e.key }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% if advice.suggestions %}
+    <div class="advice-group">
+      <h4>操作建议</h4>
+      {% for s in advice.suggestions %}
+      <div class="advice-card">{{ s }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="review-foot">
+  <span class="muted" style="font-size:13px">AI 置信度 {{ (confidence.overall * 100)|int }}%，请核对后提交。</span>
+  <span id="changed-count" class="pill pill-type" style="display:none"></span>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <a href="/ask" class="btn-secondary">
+      <svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      重新输入
+    </a>
+    <button type="button" class="btn-secondary" onclick="saveDraft()">存入草稿库</button>
+    <button type="button" class="btn-gradient" onclick="submitViim()">确认提交 VIIM
+      <svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </button>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.__LOCAL_HITS = {};
+{% for h in hits %}{% if h %}window.__LOCAL_HITS[{{ h.key|tojson }}] = {{ h|tojson }};{% endif %}{% endfor %}
+window.__uploads = [];
+
+function onFiles(input) {
+  Array.from(input.files).forEach(function(f) {
+    // 过大图片自动压缩后再上传（最长边1600px / 1.5MB 阈值）
+    var job = window.downscaleImageFile ? downscaleImageFile(f) : Promise.resolve(f);
+    job.then(function(sf) {
+      var fd = new FormData();
+      fd.append('file', sf);
+      fetch('/api/upload-image', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!d.ok) { alert('上传失败: ' + (d.error || '')); return; }
+          window.__uploads.push(d.filename);
+          var img = document.createElement('img');
+          img.src = d.path; img.alt = d.original_name; img.title = d.original_name;
+          document.getElementById('upload-thumbs').appendChild(img);
+          document.getElementById('upload-count').textContent = '已上传 ' + window.__uploads.length + ' 张现场图';
+        });
+    });
+  });
+  input.value = '';
+}
+
+function focusReco() {
+  var col = document.getElementById('reco-col');
+  if (!col) return;
+  col.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  col.classList.remove('flash-col');
+  void col.offsetWidth;
+  col.classList.add('flash-col');
+}
+
+function adoptSolution(btn) {
+  var sol = btn.getAttribute('data-sol') || '';
+  if (!sol) { alert('该案例暂无可采纳的方案文本'); return; }
+  var ta = document.querySelector('[name=solution]');
+  ta.value = sol;
+  ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  ta.focus();
+}
+
+function submitViim() {
+  var base = JSON.parse(document.getElementById('init-payload').textContent);
+  function g(n) { var el = document.querySelector('[name=' + n + ']'); return el ? el.value.trim() : ''; }
+  var desc = g('description');
+  var sol = g('solution');
+  if (sol) desc += '\n\n对策方案：\n' + sol;
+  base.summary = g('summary') || base.summary;
+  base.description = desc;
+  base.project = g('viim_project') || base.project;
+  var af = base.additional_fields;
+  var carModel = g('viim_car_model');
+  if (carModel) { if (!af.customfield_13913) af.customfield_13913 = {}; af.customfield_13913.value = carModel; }
+  else delete af.customfield_13913;
+  af.customfield_13082.value = g('viim_department') || af.customfield_13082.value;
+  af.customfield_13088.value = g('viim_area') || af.customfield_13088.value;
+  af.customfield_10621.value = g('viim_severity') || af.customfield_10621.value;
+  af.customfield_14001.value = g('viim_urgency') || af.customfield_14001.value;
+  af.customfield_13089.value = g('viim_phase') || af.customfield_13089.value;
+  var casNo = g('viim_cas_number');
+  if (casNo) af.customfield_13083 = casNo; else delete af.customfield_13083;
+  af.customfield_13085.value = g('viim_ti_status') || af.customfield_13085.value;
+  af.customfield_13084 = g('viim_close_date') || af.customfield_13084;
+  af.customfield_13876 = g('viim_cas_date') || af.customfield_13876;
+  // 责任人（userpicker，留空则不传）
+  if (g('overall_email'))  af.customfield_12950 = { name: g('overall_email') };
+  if (g('design_email'))   af.customfield_12951 = { name: g('design_email') };
+  if (g('engineer_email')) af.customfield_13835 = { name: g('engineer_email') };
+  // 关闭CAS号 / TI件号（textfield，留空不传）
+  if (g('viim_close_cas_number')) af.customfield_13873 = g('viim_close_cas_number'); else delete af.customfield_13873;
+  if (g('viim_ti_part_number')) af.customfield_13086 = g('viim_ti_part_number'); else delete af.customfield_13086;
+  // 关联责任人（multiuserpicker，逗号/分号分隔邮箱）
+  var relatedOwners = g('viim_related_owners');
+  if (relatedOwners) {
+    af.customfield_10829 = relatedOwners.split(/[;,，；]/).map(function(s){ return { name: s.trim() }; }).filter(function(x){ return x.name; });
+  } else delete af.customfield_10829;
+  // 经办人（userpicker）
+  if (g('viim_assignee')) af.assignee = { name: g('viim_assignee') }; else delete af.assignee;
+
+  fetch('/api/submit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ payload: base, attachments: window.__uploads })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) {
+      var msg = '提交成功：' + d.issue_key;
+      if (d.attachments_uploaded && d.attachments_uploaded.length) msg += '（附件 ' + d.attachments_uploaded.length + ' 个）';
+      if (d.attachment_errors && d.attachment_errors.length) msg += '\n部分附件失败：' + d.attachment_errors.join('；');
+      alert(msg);
+      location.href = '/history';
+    } else {
+      alert('提交失败：' + (d.error || '') + ' ' + (d.detail || ''));
+    }
+  }).catch(function(e) { alert('网络错误：' + e); });
+}
+
+function saveDraft() {
+  var data = {};
+  document.querySelectorAll('#review-form [name]').forEach(function(el) { data[el.name] = el.value; });
+  fetch('/api/save-draft', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(function(r) { return r.json(); })
+    .then(function(d) { alert(d.ok ? '草稿已保存' : '保存失败: ' + (d.error || '')); })
+    .catch(function() { alert('网络错误'); });
+}
+
+// 字段改动高亮 + 计数
+(function() {
+  var els = document.querySelectorAll('#review-form .form-input');
+  els.forEach(function(el) { el.dataset.initial = el.value; });
+  function upd() {
+    var n = 0;
+    els.forEach(function(el) {
+      var ch = el.value !== el.dataset.initial;
+      el.classList.toggle('field-changed', ch);
+      if (ch) n++;
+    });
+    var c = document.getElementById('changed-count');
+    if (c) {
+      c.style.display = n ? '' : 'none';
+      c.textContent = '已修改 ' + n + ' 处';
+    }
+  }
+  document.addEventListener('input', upd);
+  document.addEventListener('change', upd);
+})();
+
+// 图片灯箱 — 调用 base.html 的 openLightbox
+if (!window._lightboxBound) {
+  window._lightboxBound = true;
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest ? e.target.closest('.report-img-btn') : null;
+    if (!btn) return;
+    var u = btn.getAttribute('data-img');
+    if (!u) return;
+    openLightbox(u);
+  });
+}
+</script>
+{% endblock %}

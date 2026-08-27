@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FC 可行性分析</title>
+<style>
+:root {
+  --bg: #f7f8fa;
+  --card: #fff;
+  --border: #e5e7eb;
+  --text: #1a1a2e;
+  --text2: #6b7280;
+  --primary: #e53935;
+  --primary-light: #fde8e8;
+  --accent: #1976d2;
+  --accent-light: #e3f2fd;
+  --success: #2e7d32;
+  --success-light: #e8f5e9;
+  --warning: #f57c00;
+  --warning-light: #fff3e0;
+  --danger: #c62828;
+  --danger-light: #ffebee;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Layout */
+.topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; height: 52px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+.topbar-brand { font-weight: 700; font-size: 16px; color: var(--primary); margin-right: 24px; white-space: nowrap; }
+.topbar-tabs { display: flex; gap: 4px; flex: 1; }
+.topbar-tabs .tab { padding: 8px 16px; border-radius: 8px; font-size: 14px; color: var(--text2); cursor: pointer; transition: all .2s; border: none; background: none; font-weight: 500; }
+.topbar-tabs .tab:hover { background: var(--bg); color: var(--text); }
+.topbar-tabs .tab.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+.topbar-user { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); }
+.topbar-user img { width: 28px; height: 28px; border-radius: 50%; }
+
+.container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+
+/* Cards */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+.card-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+
+/* Form elements */
+textarea, input, select { font-family: inherit; font-size: 14px; }
+textarea { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 12px; resize: vertical; min-height: 80px; transition: border .2s; }
+textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(229,57,53,.1); }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all .2s; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #c62828; transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+.btn-primary:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: #1565c0; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-outline:hover { background: var(--bg); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.actions { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
+
+/* Query examples */
+.examples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.examples .chip { padding: 4px 10px; border-radius: 16px; font-size: 12px; background: var(--bg); border: 1px solid var(--border); cursor: pointer; transition: all .2s; }
+.examples .chip:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+
+/* Report */
+.report-section { margin-top: 16px; }
+.report-section h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge-primary { background: var(--danger-light); color: var(--danger); }
+.badge-secondary { background: var(--warning-light); color: var(--warning); }
+.badge-info { background: var(--accent-light); color: var(--accent); }
+.badge-success { background: var(--success-light); color: var(--success); }
+
+.root-cause-item { padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+.root-cause-item:last-child { border-bottom: none; }
+
+/* Fields grid */
+.fields-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 12px 0; }
+.field-item { padding: 8px 12px; background: var(--bg); border-radius: 6px; font-size: 13px; }
+.field-item .label { color: var(--text2); font-size: 11px; margin-bottom: 2px; }
+.field-item .value { font-weight: 500; }
+
+/* Hits list */
+.hit-card { padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; transition: border .2s; }
+.hit-card:hover { border-color: var(--primary); }
+.hit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.hit-score { font-size: 12px; font-weight: 600; color: var(--primary); }
+.hit-summary { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.hit-meta { font-size: 12px; color: var(--text2); display: flex; gap: 12px; }
+
+/* Status table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: var(--bg); font-weight: 600; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); }
+td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+tr:hover { background: #fafbfc; }
+.status-badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; }
+.status-todo { background: var(--warning-light); color: var(--warning); }
+.status-doing { background: var(--accent-light); color: var(--accent); }
+.status-done { background: var(--success-light); color: var(--success); }
+.status-overdue { background: var(--danger-light); color: var(--danger); }
+
+/* Reminder items */
+.reminder-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border); }
+.reminder-icon { font-size: 20px; flex-shrink: 0; }
+.reminder-body { flex: 1; }
+.reminder-title { font-weight: 500; font-size: 14px; margin-bottom: 2px; }
+.reminder-meta { font-size: 12px; color: var(--text2); }
+
+/* Dashboard stats */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat-card { text-align: center; padding: 16px; border-radius: 8px; border: 1px solid var(--border); }
+.stat-value { font-size: 28px; font-weight: 700; }
+.stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+/* Loading / Empty */
+.loading { text-align: center; padding: 40px; color: var(--text2); }
+.loading::after { content: ''; display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .6s linear infinite; margin-left: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { text-align: center; padding: 40px; color: var(--text2); font-size: 14px; }
+.error-msg { color: var(--danger); background: var(--danger-light); padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 8px; }
+.success-msg { color: var(--success); background: var(--success-light); padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 8px; }
+
+/* Feedback */
+.feedback-form { display: grid; gap: 12px; }
+.feedback-row { display: flex; gap: 12px; align-items: center; }
+.feedback-row label { min-width: 80px; font-size: 13px; font-weight: 500; }
+.feedback-row input, .feedback-row select { flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+
+/* Toast */
+.toast { position: fixed; top: 60px; right: 20px; padding: 12px 20px; border-radius: 8px; color: #fff; font-size: 13px; z-index: 1000; animation: slideIn .3s ease; }
+.toast-success { background: var(--success); }
+.toast-error { background: var(--danger); }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .topbar { padding: 0 12px; }
+  .topbar-tabs .tab { padding: 6px 10px; font-size: 13px; }
+  .topbar-brand { font-size: 14px; margin-right: 12px; }
+  .container { padding: 12px 8px; }
+  .fields-grid { grid-template-columns: 1fr 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-brand">FC Analyzer</div>
+  <div class="topbar-tabs">
+    <button class="tab active" data-tab="query">分析</button>
+    <button class="tab" data-tab="check">状态</button>
+    <button class="tab" data-tab="history">历史</button>
+    <button class="tab" data-tab="reminders">提醒</button>
+    <button class="tab" data-tab="feedback">反馈</button>
+  </div>
+  <div class="topbar-user">
+    <span id="user-name">加载中...</span>
+  </div>
+</div>
+
+<!-- Tab: Query / Analyze -->
+<div class="container" id="tab-query">
+  <div class="card">
+    <div class="card-title">FC 问题分析</div>
+    <textarea id="query-input" placeholder="输入FC问题描述，例如：远光灯光型截止线不清晰，CAS阶段发现配光不合格，亮度衰减超过30%"></textarea>
+    <div class="examples" id="examples"></div>
+    <div class="actions">
+      <button class="btn btn-primary" id="btn-analyze" onclick="doAnalyze()">分析</button>
+      <button class="btn btn-outline" onclick="clearQuery()">清空</button>
+      <span id="analyze-status" style="font-size:13px;color:var(--text2);"></span>
+    </div>
+  </div>
+
+  <div id="result-area"></div>
+</div>
+
+<!-- Tab: Status Check -->
+<div class="container" id="tab-check" style="display:none">
+  <div class="card">
+    <div class="card-title">报告状态检查</div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="loadStatusCheck()">刷新状态</button>
+      <label style="font-size:13px;display:flex;align-items:center;gap:4px;margin-left:12px">
+        <input type="checkbox" id="filter-mine" onchange="loadStatusCheck()"> 只看我负责的
+      </label>
+      <label style="font-size:13px;display:flex;align-items:center;gap:4px;margin-left:12px">
+        <input type="checkbox" id="filter-overdue" onchange="loadStatusCheck()"> 只看逾期
+      </label>
+    </div>
+  </div>
+  <div id="status-dashboard"></div>
+  <div id="status-table-area"><div class="empty">点击"刷新状态"加载数据</div></div>
+</div>
+
+<!-- Tab: History -->
+<div class="container" id="tab-history" style="display:none">
+  <div class="card">
+    <div class="card-title">历史记录</div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="loadHistory()">刷新</button>
+      <label style="font-size:13px;display:flex;align-items:center;gap:4px;margin-left:12px">
+        <input type="checkbox" id="history-mine" onchange="loadHistory()"> 只看我的
+      </label>
+    </div>
+  </div>
+  <div id="history-list"><div class="empty">点击"刷新"加载历史记录</div></div>
+</div>
+
+<!-- Tab: Reminders -->
+<div class="container" id="tab-reminders" style="display:none">
+  <div class="card">
+    <div class="card-title">跟进提醒</div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="loadReminders()">刷新提醒</button>
+      <button class="btn btn-outline" onclick="loadAlerts()">检查新告警</button>
+    </div>
+  </div>
+  <div id="reminders-list"><div class="empty">点击"刷新提醒"加载数据</div></div>
+</div>
+
+<!-- Tab: Feedback -->
+<div class="container" id="tab-feedback" style="display:none">
+  <div class="card">
+    <div class="card-title">反馈学习</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">如果系统提取的字段不正确，请在此修正，帮助系统学习。</p>
+    <div class="feedback-form" id="feedback-form">
+      <div class="feedback-row">
+        <label>原始文本</label>
+        <input type="text" id="fb-text" placeholder="粘贴原始FC描述">
+      </div>
+      <div class="feedback-row">
+        <label>区域修正</label>
+        <input type="text" id="fb-area" placeholder="正确的灯具区域">
+      </div>
+      <div class="feedback-row">
+        <label>严重度修正</label>
+        <select id="fb-severity">
+          <option value="">不修正</option>
+          <option value="S">S-安全法规</option>
+          <option value="A">A-功能性能</option>
+          <option value="B">B-外观间隙</option>
+          <option value="C">C-轻微</option>
+          <option value="D">D-建议</option>
+        </select>
+      </div>
+      <div class="feedback-row">
+        <label>阶段修正</label>
+        <input type="text" id="fb-phase" placeholder="正确的开发阶段">
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="submitFeedback()">提交反馈</button>
+        <button class="btn btn-outline" onclick="loadFeedbackStats()">查看统计</button>
+      </div>
+    </div>
+  </div>
+  <div id="feedback-stats"></div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script>
+/* ============================================================
+ *  State & Config
+ * ============================================================ */
+const API = '';  // same origin
+let currentUser = null;
+
+const EXAMPLES = [
+  '远光灯光型截止线不清晰，配光不合格',
+  '后尾灯密封进水，IP67测试失败',
+  '转向灯LED色差超标，与标准样品对比偏蓝',
+  '近光灯散热不足，温度超过85°C触发保护',
+  '高位制动灯固定卡扣松脱，振动试验后脱落',
+  '日行灯透镜龟裂，耐久试验2000h后出现',
+];
+
+/* ============================================================
+ *  Init
+ * ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  renderExamples();
+  loadUser();
+  setupTabs();
+  setupKeyboard();
+});
+
+function setupTabs() {
+  document.querySelectorAll('.topbar-tabs .tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.topbar-tabs .tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const name = tab.dataset.tab;
+      document.querySelectorAll('.container').forEach(c => c.style.display = 'none');
+      document.getElementById('tab-' + name).style.display = '';
+    });
+  });
+}
+
+function setupKeyboard() {
+  document.getElementById('query-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      doAnalyze();
+    }
+  });
+}
+
+async function loadUser() {
+  try {
+    const resp = await fetch(API + '/api/me');
+    if (resp.ok) {
+      currentUser = await resp.json();
+      document.getElementById('user-name').textContent = currentUser.name || '未登录';
+    }
+  } catch { document.getElementById('user-name').textContent = '未登录'; }
+}
+
+function renderExamples() {
+  const el = document.getElementById('examples');
+  el.innerHTML = EXAMPLES.map(e => `<span class="chip" onclick="setQuery('${e}')">${e.slice(0, 20)}...</span>`).join('');
+}
+
+/* ============================================================
+ *  Analyze
+ * ============================================================ */
+async function doAnalyze() {
+  const text = document.getElementById('query-input').value.trim();
+  if (!text) return toast('请输入FC问题描述', 'error');
+
+  const btn = document.getElementById('btn-analyze');
+  const status = document.getElementById('analyze-status');
+  btn.disabled = true;
+  status.textContent = '分析中...';
+  document.getElementById('result-area').innerHTML = '<div class="loading">正在分析，请稍候</div>';
+
+  try {
+    const resp = await fetch(API + '/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '分析失败');
+
+    renderAnalysisResult(data);
+    status.textContent = `匹配到 ${data.hit_count} 条历史案例`;
+  } catch (e) {
+    document.getElementById('result-area').innerHTML = `<div class="error-msg">${e.message}</div>`;
+    status.textContent = '';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderAnalysisResult(data) {
+  const { fields, hits, report, report_markdown } = data;
+  let html = '';
+
+  // Fields card
+  html += `<div class="card"><div class="card-title">提取字段</div><div class="fields-grid">`;
+  const fieldDisplay = {
+    area: '区域', severity: '严重度', urgency: '紧急度', phase: '开发阶段',
+    car_model: '车型', problem_type: '问题类型', cas_number: 'CAS编号', summary: '摘要',
+  };
+  for (const [key, label] of Object.entries(fieldDisplay)) {
+    const val = fields[key] || '-';
+    html += `<div class="field-item"><div class="label">${label}</div><div class="value">${val}</div></div>`;
+  }
+  html += `</div></div>`;
+
+  // Similar cases
+  if (hits.length) {
+    html += `<div class="card"><div class="card-title">相似历史案例 (${hits.length})</div>`;
+    for (const hit of hits) {
+      const scorePct = Math.round((hit.score || 0) * 100);
+      const badgeClass = scorePct >= 60 ? 'badge-primary' : scorePct >= 30 ? 'badge-secondary' : 'badge-info';
+      html += `<div class="hit-card">
+        <div class="hit-header">
+          <span class="badge ${badgeClass}">匹配度 ${scorePct}%</span>
+          ${hit.key ? `<a href="${hit.url || '#'}" target="_blank">${hit.key}</a>` : ''}
+        </div>
+        <div class="hit-summary">${hit.summary || hit.fc_text || '-'}</div>
+        <div class="hit-meta">
+          ${hit.area ? `<span>区域: ${hit.area}</span>` : ''}
+          ${hit.severity ? `<span>严重度: ${hit.severity}</span>` : ''}
+          ${hit.problem_type ? `<span>类型: ${hit.problem_type}</span>` : ''}
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Report
+  if (report) {
+    html += `<div class="card"><div class="card-title">可行性分析报告</div>`;
+    html += `<p style="margin-bottom:12px">${report.summary || ''}</p>`;
+
+    if (report.root_causes?.length) {
+      html += `<div class="report-section"><h3>根因分析</h3>`;
+      for (const rc of report.root_causes) {
+        const levelClass = rc.level === 'primary' ? 'badge-primary' : rc.level === 'secondary' ? 'badge-secondary' : 'badge-info';
+        const levelText = rc.level === 'primary' ? '主要' : rc.level === 'secondary' ? '次要' : '边缘';
+        html += `<div class="root-cause-item"><span class="badge ${levelClass}">${levelText}</span><span>${rc.text}</span></div>`;
+      }
+      html += `</div>`;
+    }
+
+    if (report.modification_directions?.length) {
+      html += `<div class="report-section"><h3>修改方向</h3>`;
+      for (const d of report.modification_directions) {
+        html += `<div style="padding:4px 0;font-size:13px">- ${d.direction} <span style="color:var(--text2)">(出现${d.count}次)</span></div>`;
+      }
+      html += `</div>`;
+    }
+
+    if (report.recommendation) {
+      html += `<div class="report-section"><h3>建议</h3><p style="font-size:13px;white-space:pre-wrap">${report.recommendation}</p></div>`;
+    }
+
+    html += `<div class="actions">
+      <button class="btn btn-accent" onclick="submitToVIIM()">提交到 VIIM</button>
+      <button class="btn btn-outline" onclick="saveDraft()">保存草稿</button>
+    </div>`;
+    html += `</div>`;
+  }
+
+  document.getElementById('result-area').innerHTML = html;
+  // Store for submission
+  window._lastAnalysis = data;
+}
+
+/* ============================================================
+ *  Submit / Draft
+ * ============================================================ */
+async function submitToVIIM() {
+  const data = window._lastAnalysis;
+  if (!data) return toast('请先分析一个问题', 'error');
+
+  try {
+    const resp = await fetch(API + '/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        summary: data.fields.summary,
+        description: data.fields.description,
+        fields: data.fields,
+      }),
+    });
+    const result = await resp.json();
+    if (!resp.ok) throw new Error(result.error || '提交失败');
+    toast(`已提交: ${result.key}`, 'success');
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+async function saveDraft() {
+  const data = window._lastAnalysis;
+  if (!data) return;
+  try {
+    const resp = await fetch(API + '/api/draft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: data.fields.raw_text || document.getElementById('query-input').value,
+        fields: data.fields,
+        report: data.report,
+      }),
+    });
+    const result = await resp.json();
+    if (!resp.ok) throw new Error(result.error);
+    toast('草稿已保存', 'success');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+/* ============================================================
+ *  Status Check
+ * ============================================================ */
+async function loadStatusCheck() {
+  const mine = document.getElementById('filter-mine').checked;
+  const overdue = document.getElementById('filter-overdue').checked;
+
+  document.getElementById('status-table-area').innerHTML = '<div class="loading">加载中</div>';
+
+  try {
+    const params = new URLSearchParams();
+    if (mine) params.set('assignee', currentUser?.name || '');
+    if (overdue) params.set('overdue', '1');
+
+    const [dashResp, checkResp] = await Promise.all([
+      fetch(API + '/api/dashboard'),
+      fetch(API + '/api/report-check?' + params),
+    ]);
+    const dash = await dashResp.json();
+    const check = await checkResp.json();
+
+    renderDashboard(dash);
+    renderStatusTable(check);
+  } catch (e) {
+    document.getElementById('status-table-area').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+function renderDashboard(dash) {
+  const s = dash.summary;
+  document.getElementById('status-dashboard').innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-value" style="color:var(--accent)">${s.total}</div><div class="stat-label">总计</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:var(--warning)">${s.open}</div><div class="stat-label">进行中</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:var(--success)">${s.closed}</div><div class="stat-label">已完成</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:var(--danger)">${s.overdue}</div><div class="stat-label">逾期</div></div>
+    </div>
+  `;
+}
+
+function renderStatusTable(check) {
+  if (!check.issues?.length) {
+    document.getElementById('status-table-area').innerHTML = '<div class="empty">暂无数据</div>';
+    return;
+  }
+  let html = '<div class="card"><div class="table-wrap"><table><thead><tr>';
+  html += '<th>工单</th><th>摘要</th><th>状态</th><th>天数</th><th>来源</th></tr></thead><tbody>';
+  for (const issue of check.issues) {
+    const catClass = issue.status_category === '完成' ? 'status-done' : issue.status_category === '处理中' ? 'status-doing' : issue.status_category === '待办' ? 'status-todo' : '';
+    html += `<tr>
+      <td>${issue.key ? `<a href="${issue.url || '#'}" target="_blank">${issue.key}</a>` : '-'}</td>
+      <td>${(issue.summary || '').slice(0, 50)}</td>
+      <td><span class="status-badge ${catClass}">${issue.status || issue.status_category || '-'}</span></td>
+      <td>${issue.days_open ?? '-'}</td>
+      <td>${issue.source || '-'}</td>
+    </tr>`;
+  }
+  html += '</tbody></table></div></div>';
+  document.getElementById('status-table-area').innerHTML = html;
+}
+
+/* ============================================================
+ *  History
+ * ============================================================ */
+async function loadHistory() {
+  const mine = document.getElementById('history-mine').checked;
+  document.getElementById('history-list').innerHTML = '<div class="loading">加载中</div>';
+
+  try {
+    const params = mine ? '?mine=1' : '';
+    const resp = await fetch(API + '/api/history' + params);
+    const data = await resp.json();
+
+    if (!data.items?.length) {
+      document.getElementById('history-list').innerHTML = '<div class="empty">暂无历史记录</div>';
+      return;
+    }
+
+    let html = '';
+    for (const item of data.items) {
+      const isSubmission = item.type === 'submission';
+      const icon = isSubmission ? '✅' : '📝';
+      const typeLabel = isSubmission ? '已提交' : '草稿';
+      const date = new Date(item.created_at).toLocaleString('zh-CN');
+      html += `<div class="card" style="padding:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span>${icon} <strong>${item.key || item.id || '-'}</strong> <span class="badge badge-info">${typeLabel}</span></span>
+          <span style="font-size:12px;color:var(--text2)">${date}</span>
+        </div>
+        <div style="font-size:13px;margin-top:4px">${(item.summary || item.text || '').slice(0, 80)}</div>
+        ${!isSubmission ? `<div class="actions"><button class="btn btn-sm btn-outline" onclick="deleteDraft('${item.id}')">删除</button></div>` : ''}
+      </div>`;
+    }
+    document.getElementById('history-list').innerHTML = html;
+  } catch (e) {
+    document.getElementById('history-list').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function deleteDraft(id) {
+  if (!confirm('确定删除该草稿？')) return;
+  try {
+    await fetch(API + '/api/draft/' + id, { method: 'DELETE' });
+    toast('已删除', 'success');
+    loadHistory();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+/* ============================================================
+ *  Reminders
+ * ============================================================ */
+async function loadReminders() {
+  document.getElementById('reminders-list').innerHTML = '<div class="loading">加载中</div>';
+  try {
+    const resp = await fetch(API + '/api/reminders');
+    const data = await resp.json();
+
+    if (!data.reminders?.length) {
+      document.getElementById('reminders-list').innerHTML = '<div class="empty">暂无需要跟进的事项</div>';
+      return;
+    }
+
+    let html = '';
+    for (const r of data.reminders) {
+      const icon = r.priority === 1 ? '🔴' : r.priority === 2 ? '🟡' : '⚪';
+      html += `<div class="reminder-item">
+        <div class="reminder-icon">${icon}</div>
+        <div class="reminder-body">
+          <div class="reminder-title">${r.reason}</div>
+          <div class="reminder-meta">${r.fc_text || ''}</div>
+          <div class="reminder-meta">操作: ${r.action} | 区域: ${r.area || '-'} | 严重度: ${r.severity || '-'}</div>
+        </div>
+      </div>`;
+    }
+    document.getElementById('reminders-list').innerHTML = html;
+  } catch (e) {
+    document.getElementById('reminders-list').innerHTML = `<div class="error-msg">${e.message}</div>`;
+  }
+}
+
+async function loadAlerts() {
+  try {
+    const resp = await fetch(API + '/api/alerts');
+    const data = await resp.json();
+    if (data.alerts?.length) {
+      toast(`发现 ${data.total} 条新告警`, 'error');
+      loadReminders();
+    } else {
+      toast('暂无新告警', 'success');
+    }
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+/* ============================================================
+ *  Feedback
+ * ============================================================ */
+async function submitFeedback() {
+  const text = document.getElementById('fb-text').value.trim();
+  if (!text) return toast('请输入原始FC描述', 'error');
+
+  const corrections = {};
+  const area = document.getElementById('fb-area').value.trim();
+  const severity = document.getElementById('fb-severity').value;
+  const phase = document.getElementById('fb-phase').value.trim();
+
+  if (area) corrections.area = area;
+  if (severity) corrections.severity = severity;
+  if (phase) corrections.phase = phase;
+
+  if (!Object.keys(corrections).length) return toast('请至少修正一个字段', 'error');
+
+  try {
+    const resp = await fetch(API + '/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, corrections }),
+    });
+    const result = await resp.json();
+    if (!resp.ok) throw new Error(result.error);
+    toast('反馈已提交，感谢！', 'success');
+    document.getElementById('fb-text').value = '';
+    document.getElementById('fb-area').value = '';
+    document.getElementById('fb-severity').value = '';
+    document.getElementById('fb-phase').value = '';
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function loadFeedbackStats() {
+  try {
+    const resp = await fetch(API + '/api/stats');
+    const data = await resp.json();
+    document.getElementById('feedback-stats').innerHTML = `
+      <div class="card">
+        <div class="card-title">反馈统计</div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-value">${data.total_feedbacks}</div><div class="stat-label">总反馈数</div></div>
+          <div class="stat-card"><div class="stat-value">${data.with_corrections}</div><div class="stat-label">有修正</div></div>
+          <div class="stat-card"><div class="stat-value">${data.accuracy}</div><div class="stat-label">准确率</div></div>
+        </div>
+      </div>
+    `;
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+/* ============================================================
+ *  Helpers
+ * ============================================================ */
+function setQuery(text) {
+  document.getElementById('query-input').value = text;
+}
+
+function clearQuery() {
+  document.getElementById('query-input').value = '';
+  document.getElementById('result-area').innerHTML = '';
+  document.getElementById('analyze-status').textContent = '';
+  window._lastAnalysis = null;
+}
+
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+</script>
+<script src="/ai-widget.js"></script>
+</body>
+</html>

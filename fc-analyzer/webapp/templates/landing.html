@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FC 可行性分析 · 导引页</title>
+<link rel="stylesheet" href="/static/style.css?v=20260813">
+<style>
+  :root { color-scheme: dark; }
+  html, body { background: #04060b; }
+  body::before { display: none; }  /* 关掉极光层，视频即氛围 */
+
+  .lp-video {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    filter: brightness(0.82) saturate(1.15);
+    z-index: 0;
+  }
+  .lp-shade {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      radial-gradient(120% 90% at 50% 10%, transparent 40%, rgba(2,4,9,0.55) 100%),
+      linear-gradient(180deg, rgba(3,5,10,0.72) 0%, rgba(3,5,10,0.25) 34%, rgba(3,5,10,0.30) 62%, rgba(2,4,9,0.88) 100%);
+  }
+
+  .lp-top {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 3;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px;
+  }
+  .lp-brand { display: flex; gap: 12px; align-items: center; }
+  .lp-brand img { width: 30px; height: 30px; object-fit: contain; border-radius: 8px; }
+  .lp-brand b { color: #f2f6ff; font-size: 15px; letter-spacing: 0.02em; }
+  .lp-brand span { color: rgba(210,225,255,0.55); font-size: 12px; display: block; margin-top: 1px; }
+  .lp-enter {
+    color: #bfe3ff; text-decoration: none; font-size: 13px; font-weight: 600;
+    padding: 9px 18px; border-radius: 999px;
+    border: 1px solid rgba(140,190,255,0.35);
+    background: rgba(10,20,40,0.35);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    transition: all .25s cubic-bezier(0.22,1,0.36,1);
+  }
+  .lp-enter:hover { background: rgba(60,130,246,0.25); border-color: rgba(140,190,255,0.7); box-shadow: 0 0 24px rgba(60,130,246,0.35); opacity: 1; }
+
+  .lp-stage {
+    position: relative; z-index: 2;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 96px 24px 56px;
+    text-align: center;
+  }
+  .lp-eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.42em;
+    color: rgba(140,200,255,0.75);
+    text-transform: uppercase;
+  }
+  .lp-title {
+    margin: 14px 0 10px;
+    font-size: clamp(34px, 6vw, 64px);
+    font-weight: 800; letter-spacing: -0.02em; line-height: 1.12;
+    background: linear-gradient(94deg, #eaf6ff 0%, #8ec9ff 42%, #4dd7c4 78%, #b78cff 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    text-shadow: 0 0 60px rgba(77,215,196,0.15);
+  }
+  .lp-sub {
+    color: rgba(214,228,250,0.72);
+    font-size: 15px; max-width: 56ch; line-height: 1.7;
+  }
+
+  .lp-cards {
+    margin-top: 44px;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+    width: min(1080px, 100%);
+  }
+  @media (max-width: 1000px) { .lp-cards { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 640px)  { .lp-cards { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 440px)  { .lp-cards { grid-template-columns: 1fr; } }
+
+  .lp-card {
+    position: relative;
+    display: flex; flex-direction: column; gap: 10px;
+    text-align: left; text-decoration: none;
+    padding: 18px 18px 16px;
+    border-radius: 18px;
+    background: rgba(10,16,30,0.42);
+    border: 1px solid rgba(150,190,255,0.16);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 32px rgba(0,0,0,0.35);
+    transition: transform .3s cubic-bezier(0.22,1,0.36,1), border-color .3s, box-shadow .3s, background .3s;
+    overflow: hidden;
+  }
+  .lp-card::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(120% 80% at 20% 0%, rgba(80,160,255,0.16), transparent 55%);
+    opacity: 0; transition: opacity .3s;
+  }
+  .lp-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(140,200,255,0.45);
+    background: rgba(14,22,42,0.55);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 18px 44px rgba(0,0,0,0.5), 0 0 32px rgba(60,140,255,0.18);
+    opacity: 1;
+  }
+  .lp-card:hover::after { opacity: 1; }
+  .lp-card__icon {
+    width: 38px; height: 38px; border-radius: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #9fd4ff;
+    background: linear-gradient(135deg, rgba(60,130,246,0.28), rgba(77,215,196,0.20));
+    border: 1px solid rgba(140,200,255,0.25);
+  }
+  .lp-card__title { color: #f0f6ff; font-size: 15px; font-weight: 700; letter-spacing: 0.01em; }
+  .lp-card__desc { color: rgba(206,220,244,0.62); font-size: 12px; line-height: 1.6; }
+  .lp-card__go {
+    margin-top: auto; padding-top: 6px;
+    color: rgba(140,200,255,0.8); font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; gap: 4px;
+    transition: gap .25s;
+  }
+  .lp-card:hover .lp-card__go { gap: 9px; color: #bfe3ff; }
+
+  .lp-foot {
+    margin-top: 40px;
+    color: rgba(190,208,236,0.42);
+    font-size: 11.5px; letter-spacing: 0.14em;
+  }
+</style>
+</head>
+<body>
+
+<video class="lp-video" autoplay muted loop playsinline preload="auto" poster="/static/lighting-poster.png">
+  <source src="/static/lighting-bg.mp4" type="video/mp4">
+</video>
+<div class="lp-shade"></div>
+<script>
+(function(){
+  var v = document.querySelector('.lp-video');
+  if (v && window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    v.pause();  /* 尊重系统"减弱动态效果"：停在首帧海报 */
+  }
+})();
+</script>
+
+<header class="lp-top">
+  <div class="lp-brand">
+    <img src="/static/mi-logo.png" alt="某车企">
+    <div><b>FC 可行性分析</b><span>灯光 · 问题提醒与跟踪</span></div>
+  </div>
+  <a class="lp-enter" href="/ask">进入系统 →</a>
+</header>
+
+<main class="lp-stage">
+  <div class="lp-eyebrow">FC Feasibility Analyzer · Lighting</div>
+  <h1 class="lp-title">一句话描述，秒判灯具 FC 可行性</h1>
+  <p class="lp-sub">一句话描述 FC 问题 → AI 抽取字段、检索历史案例、生成可行性分析与工程师建议 → 三栏智能核对后一键提交 VIIM。</p>
+
+  <nav class="lp-cards">
+    <a class="lp-card" href="/ask">
+      <span class="lp-card__icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6M12 22a8 8 0 0 0 8-8h-4M4 14a8 8 0 0 0 8 8"/><circle cx="12" cy="12" r="2.5"/></svg></span>
+      <span class="lp-card__title">问一下</span>
+      <span class="lp-card__desc">描述现象，AI 检索历史案例并给出可行性分析与工程师建议。</span>
+      <span class="lp-card__go">开始提问 <span>→</span></span>
+    </a>
+    <a class="lp-card" href="/new">
+      <span class="lp-card__icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z"/></svg></span>
+      <span class="lp-card__title">提 FC 工单</span>
+      <span class="lp-card__desc">三栏智能核对：字段预填、对策采纳、附件随单提交 VIIM。</span>
+      <span class="lp-card__go">智能核对 <span>→</span></span>
+    </a>
+    <a class="lp-card" href="/history">
+      <span class="lp-card__icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>
+      <span class="lp-card__title">FC 工作台</span>
+      <span class="lp-card__desc">草稿与提交记录、统计看板、分页管理与草稿删除。</span>
+      <span class="lp-card__go">查看工作台 <span>→</span></span>
+    </a>
+    <a class="lp-card" href="/reminders">
+      <span class="lp-card__icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+      <span class="lp-card__title">问题提醒</span>
+      <span class="lp-card__desc">设置提醒、跟踪 FC 问题闭环，超期自动催办。</span>
+      <span class="lp-card__go">管理提醒 <span>→</span></span>
+    </a>
+    <a class="lp-card" href="/feedback">
+      <span class="lp-card__icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></span>
+      <span class="lp-card__title">反馈学习</span>
+      <span class="lp-card__desc">纠正抽取偏差，自动更新关键词库，越用越准。</span>
+      <span class="lp-card__go">去反馈 <span>→</span></span>
+    </a>
+  </nav>
+
+  <div class="lp-foot">AURORA GLASS DESIGN SYSTEM · VIDEO BACKDROP · 灯光 DRE 工作台</div>
+</main>
+
+</body>
+</html>
