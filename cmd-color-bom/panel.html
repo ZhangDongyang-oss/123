@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CMD产品颜色BOM查询</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:#f9fafb;padding:16px;color:#1d1d1f}
+h2{font-size:17px;font-weight:700;margin-bottom:3px}
+.subtitle{font-size:12px;color:#86868b;margin-bottom:14px;line-height:1.5}
+.card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:16px;margin-bottom:14px}
+.card h3{font-size:14px;font-weight:700;margin-bottom:10px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:4px}
+.field select,.field input{width:100%;padding:8px 12px;border:1px solid #d2d2d7;border-radius:8px;font-size:13px;outline:none;background:#fff}
+.field select:focus,.field input:focus{border-color:#007aff}
+.field-row{display:flex;gap:8px;align-items:stretch}
+.field-row select{flex:1}
+.btn-row{display:flex;gap:8px;margin-top:4px}
+.btn{padding:9px 14px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;flex:1;white-space:nowrap}
+.btn-primary{background:#007aff;color:#fff}
+.btn-primary:hover{background:#0063d1}
+.btn-primary:disabled{background:#c7c7cc;cursor:not-allowed}
+.btn-export{background:#34c759;color:#fff}
+.btn-export:hover{background:#2db84d}
+.btn-export:disabled{background:#c7c7cc;cursor:not-allowed}
+.btn-danger{background:#ff3b30;color:#fff}
+.btn-danger:hover{background:#d70015}
+.btn-ghost{background:#f2f2f7;color:#333;border:1px solid #d2d2d7;flex:0 0 auto}
+.btn-ghost:hover{background:#e5e5ea}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.stat-item{background:#f9f9fb;border-radius:8px;padding:10px 6px;text-align:center}
+.stat-value{font-size:20px;font-weight:700;color:#007aff}
+.stat-label{font-size:10px;color:#86868b;margin-top:2px}
+
+/* 已导入车型标签 */
+.ichips{display:flex;flex-wrap:wrap;gap:6px;margin-top:-4px;margin-bottom:12px}
+.ichip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#f0f7ff;border:1px solid #cfe4ff;border-radius:14px;font-size:11px;color:#0063d1}
+.ichip b{font-weight:600}
+.ichip .del{cursor:pointer;color:#86868b;font-weight:700;padding:0 2px}
+.ichip .del:hover{color:#ff3b30}
+
+/* 导入卡片 */
+.drop-zone{border:2px dashed #d2d2d7;border-radius:10px;padding:22px 14px;text-align:center;cursor:pointer;transition:all .15s;background:#fcfcfd}
+.drop-zone:hover,.drop-zone.dragover{border-color:#007aff;background:#f4f8ff}
+.dz-icon{font-size:26px;margin-bottom:6px}
+.dz-text{font-size:13px;color:#333}
+.dz-link{color:#007aff;font-weight:600}
+.dz-hint{font-size:11px;color:#86868b;margin-top:8px;line-height:1.6}
+.tpl-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:12px}
+.tpl-label{color:#86868b}
+.tpl-link{color:#007aff;cursor:pointer;padding:3px 10px;border:1px solid #d0e2ff;border-radius:6px;background:#f4f8ff;font-weight:500}
+.tpl-link:hover{background:#eaf2ff}
+.import-preview{margin-top:12px;display:none}
+.import-preview.show{display:block}
+.ip-meta{font-size:12px;color:#555;line-height:1.8;background:#f9f9fb;border-radius:8px;padding:8px 12px;margin-bottom:8px}
+.ip-meta .warn{color:#ff9500}
+.ip-table{width:100%;border-collapse:collapse;font-size:11px}
+.ip-table th{background:#f5f5f7;padding:5px 8px;text-align:left;font-weight:600;color:#555;border-bottom:1px solid #e5e5ea;white-space:nowrap}
+.ip-table td{padding:5px 8px;border-bottom:1px solid #f0f0f0;color:#333;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+
+/* 快捷标签条 - 始终可见 */
+.sticky-bar{position:sticky;top:0;z-index:10;background:#f9fafb;padding:8px 0;margin-bottom:10px;border-bottom:1px solid #e5e5e5}
+.quick-scroll{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+.quick-scroll::-webkit-scrollbar{height:4px}
+.quick-scroll::-webkit-scrollbar-track{background:#f0f0f0;border-radius:2px}
+.quick-scroll::-webkit-scrollbar-thumb{background:#c7c7cc;border-radius:2px}
+.qtag{padding:5px 12px;background:#f2f2f7;border:1px solid #d2d2d7;border-radius:6px;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.qtag:hover,.qtag.active{background:#007aff;color:#fff;border-color:#007aff}
+
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:560px}
+thead th{background:#f5f5f7;padding:8px 8px;text-align:left;font-weight:600;color:#555;border-bottom:2px solid #e5e5ea;white-space:nowrap;position:sticky;top:0}
+thead th.sortable{cursor:pointer;user-select:none}
+thead th.sortable:hover{background:#ececf0}
+thead th .arrow{color:#007aff;font-size:10px;margin-left:2px}
+tbody td{padding:7px 8px;border-bottom:1px solid #f0f0f0;color:#333;white-space:nowrap}
+tbody tr:hover{background:#f9f9fb}
+tbody tr:nth-child(even){background:#fcfcfd}
+tbody tr:nth-child(even):hover{background:#f5f6f8}
+mark{background:#fff3b0;color:inherit;padding:0 1px;border-radius:2px}
+.tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:500;color:#fff;line-height:1.5}
+.tag-black{background:#333}.tag-gray{background:#8e8e93}.tag-red{background:#ff3b30}
+.tag-blue{background:#007aff}.tag-green{background:#34c759}.tag-orange{background:#ff9500}
+.tag-purple{background:#af52de}.tag-pink{background:#ff2d55}.tag-teal{background:#5ac8fa}
+.tag-gold{background:#c7a03c}.tag-white{background:#e8e6e0;color:#333;border:1px solid #d2d2d7}
+.tag-default{background:#e5e5ea;color:#333}
+.tag-import{background:#0063d1}
+.swatch{display:inline-block;width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.15);vertical-align:-2px;margin-right:5px}
+.source-link{font-size:11px;color:#86868b;margin-top:10px}
+.source-link a{color:#007aff;text-decoration:none}
+.status{display:none}.status.show{display:block}
+.status-line{display:flex;align-items:center;gap:8px;font-size:13px}
+.spinner{width:16px;height:16px;border:2px solid #d0e2ff;border-top-color:#007aff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.export-hint{font-size:11px;color:#86868b;margin-top:8px;line-height:1.5;display:none}
+.export-hint.show{display:block}
+.result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.result-header .left{font-weight:600;color:#333;font-size:13px}
+.result-header .right{display:flex;gap:6px}
+.mini-btn{font-size:11px;color:#007aff;cursor:pointer;padding:3px 8px;border:1px solid #d0e2ff;border-radius:4px;background:#f4f8ff;white-space:nowrap}
+.mini-btn:hover{background:#eaf2ff}
+
+/* 结果内二次筛选 */
+.filter-bar{margin:4px 0 8px;display:none}
+.filter-bar.show{display:block}
+.filter-row{display:flex;align-items:flex-start;gap:6px;margin-bottom:6px}
+.filter-row:last-child{margin-bottom:0}
+.filter-label{font-size:11px;color:#86868b;flex-shrink:0;padding-top:4px;width:52px}
+.filter-chips{display:flex;flex-wrap:wrap;gap:5px}
+.fchip{padding:3px 9px;background:#f2f2f7;border:1px solid #d2d2d7;border-radius:12px;font-size:11px;cursor:pointer;white-space:nowrap;transition:all .15s}
+.fchip:hover{border-color:#007aff;color:#007aff}
+.fchip.active{background:#007aff;color:#fff;border-color:#007aff}
+.fchip.clear{background:#fff0f0;border-color:#ffb3ad;color:#ff3b30}
+
+/* 空结果状态 */
+.empty-state{background:#fff;border:1px dashed #d2d2d7;border-radius:12px;padding:28px 16px;text-align:center;margin-bottom:14px}
+.empty-state .icon{font-size:28px;margin-bottom:8px}
+.empty-state .title{font-size:14px;font-weight:600;color:#555;margin-bottom:4px}
+.empty-state .hint{font-size:12px;color:#86868b;line-height:1.6}
+
+/* 手动录入卡片 */
+.field textarea{width:100%;padding:8px 12px;border:1px solid #d2d2d7;border-radius:8px;font-size:12px;outline:none;background:#fff;font-family:inherit;resize:vertical;line-height:1.7}
+.field textarea:focus{border-color:#007aff}
+.mode-tabs{display:flex;gap:6px}
+.mode-tab{padding:6px 12px;background:#f2f2f7;border:1px solid #d2d2d7;border-radius:6px;font-size:12px;cursor:pointer;transition:all .15s;user-select:none}
+.mode-tab:hover{border-color:#007aff;color:#007aff}
+.mode-tab.active{background:#007aff;color:#fff;border-color:#007aff}
+.mform-head{display:flex;gap:6px;margin-bottom:6px;padding-right:22px}
+.mform-head span{flex:1;font-size:11px;color:#86868b;min-width:0}
+.mform-row{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+.mform-row input{flex:1;padding:7px 10px;border:1px solid #d2d2d7;border-radius:6px;font-size:12px;outline:none;background:#fff;min-width:0}
+.mform-row input:focus{border-color:#007aff}
+.mform-del{color:#86868b;cursor:pointer;font-weight:700;padding:0 6px;flex-shrink:0}
+.mform-del:hover{color:#ff3b30}
+.manual-preview{margin-top:12px;display:none}
+.manual-preview.show{display:block}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(8px);background:#1d1d1f;color:#fff;font-size:12px;padding:9px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:all .25s;z-index:99;max-width:80%}
+#toast.show{opacity:.94;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<h2>🎨 CMD产品颜色BOM查询</h2>
+<p class="subtitle" id="subtitle">车型C LUX 颜色配置 + 纹理代码 · 全外饰 70条颜色/73条纹理 · 玻璃业务 4条颜色/2条纹理</p>
+
+<div class="card">
+  <div class="field">
+    <label>数据范围</label>
+    <div class="field-row">
+      <select id="scopeSelect" onchange="onScopeChange()"></select>
+      <button class="btn btn-ghost" id="importToggleBtn" onclick="toggleImportCard()">📥 导入其他车型</button>
+      <button class="btn btn-ghost" id="manualToggleBtn" onclick="toggleManualCard()">⌨️ 手动录入</button>
+    </div>
+  </div>
+  <div class="ichips" id="importedChips" style="display:none"></div>
+  <div class="field">
+    <label>查询类型</label>
+    <select id="queryType" onchange="onTypeChange()">
+      <option value="全部颜色">全部颜色配置</option>
+      <option value="按颜色分类">按颜色分类筛选</option>
+      <option value="按颜色名称">按颜色名称搜索</option>
+      <option value="按颜色编码">按颜色编码搜索</option>
+      <option value="全部纹理">全部纹理代码</option>
+      <option value="按纹理分类">按纹理分类筛选</option>
+      <option value="按纹理代码">按纹理代码搜索</option>
+      <option value="全量汇总">全量统计汇总</option>
+      <option value="交叉查询">颜色+纹理交叉查询</option>
+    </select>
+  </div>
+  <div class="field" id="kwField" style="display:none">
+    <label>查询关键词（回车即查）</label>
+    <input type="text" id="keyword" placeholder="输入关键词...">
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" id="runBtn" onclick="run()">🔍 查询</button>
+    <button class="btn btn-export" id="exportBtn" onclick="exportCSV()" disabled>📊 导出</button>
+    <button class="btn btn-danger" id="clearBtn" onclick="clearAll()">🗑 清空</button>
+  </div>
+</div>
+
+<!-- 导入卡片 -->
+<div class="card" id="importCard" style="display:none">
+  <h3>📥 导入其他车型数据</h3>
+  <div class="field">
+    <label>数据类型</label>
+    <select id="importType">
+      <option value="auto">自动识别</option>
+      <option value="colors">颜色配置</option>
+      <option value="textures">纹理代码</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>车型名称</label>
+    <input type="text" id="importModel" placeholder="如：车型C / 某车型项目代号（默认取文件名）">
+  </div>
+  <div class="drop-zone" id="dropZone">
+    <div class="dz-icon">📄</div>
+    <div class="dz-text">拖拽 CSV / TSV 文件到此处，或 <span class="dz-link">点击选择文件</span></div>
+    <div class="dz-hint">列名与 车型C LUX 表一致即可自动识别（序号/颜色编码/颜色名称/颜色分类/材质类型/工艺要求/…），也支持常见别名；<br>Excel 请先「文件 → 另存为 → CSV」；支持 UTF-8 / GBK 编码</div>
+  </div>
+  <div class="tpl-row">
+    <span class="tpl-label">还没有模板？</span>
+    <span class="tpl-link" onclick="downloadTemplate('colors')">📄 颜色配置模板</span>
+    <span class="tpl-link" onclick="downloadTemplate('textures')">📄 纹理代码模板</span>
+    <span class="tpl-label">下载后按模板填写再拖入上方</span>
+  </div>
+  <input type="file" id="fileInput" accept=".csv,.tsv,.txt" style="display:none">
+  <div class="import-preview" id="importPreview"></div>
+  <div class="btn-row" style="margin-top:12px">
+    <button class="btn btn-primary" id="confirmImportBtn" onclick="confirmImport()" disabled>✅ 确认导入</button>
+    <button class="btn btn-ghost" onclick="cancelImport()">取消</button>
+  </div>
+</div>
+
+<!-- 手动录入卡片（自定义输入颜色/纹理 → BOM 表，纯前端，不改后端） -->
+<div class="card" id="manualCard" style="display:none">
+  <h3>⌨️ 自定义录入（颜色/纹理信息 → BOM 表）</h3>
+  <div class="field-row" style="margin-bottom:12px">
+    <div class="field" style="flex:0 0 42%;margin-bottom:0">
+      <label>数据类型</label>
+      <select id="manualType" onchange="onManualTypeChange()">
+        <option value="colors">颜色配置</option>
+        <option value="textures">纹理代码</option>
+      </select>
+    </div>
+    <div class="field" style="flex:1;margin-bottom:0">
+      <label>车型 / 项目名称</label>
+      <input type="text" id="manualModel" placeholder="默认：手动录入">
+    </div>
+  </div>
+  <div class="field">
+    <label>录入方式</label>
+    <div class="mode-tabs">
+      <span class="mode-tab active" id="mmText" onclick="setManualMode('text')">📝 批量文本</span>
+      <span class="mode-tab" id="mmForm" onclick="setManualMode('form')">🧩 逐行表单</span>
+    </div>
+  </div>
+  <div id="manualTextPane">
+    <div class="field">
+      <label>产品信息（每行一条，字段用逗号 / 、/ 斜杠 / Tab 分隔，可只填前几列）</label>
+      <textarea id="manualText" rows="6"></textarea>
+    </div>
+  </div>
+  <div id="manualFormPane" style="display:none">
+    <div class="mform-head" id="manualFormHead"></div>
+    <div id="manualFormBody"></div>
+    <div style="margin-top:8px">
+      <button class="btn btn-ghost" onclick="addManualFormRow()">＋ 添加一行</button>
+    </div>
+  </div>
+  <div class="manual-preview" id="manualPreview"></div>
+  <div class="btn-row" style="margin-top:12px">
+    <button class="btn btn-primary" onclick="generateManualPreview()">🔄 解析预览</button>
+    <button class="btn btn-export" id="confirmManualBtn" onclick="confirmManual()" disabled>✅ 生成BOM表</button>
+    <button class="btn btn-ghost" onclick="cancelManual()">取消</button>
+  </div>
+</div>
+
+<!-- 快捷标签条 - sticky 始终可见 -->
+<div class="sticky-bar" id="stickyBar" style="display:none">
+  <div class="quick-scroll" id="quickScroll"></div>
+</div>
+
+<div class="status" id="statusCard">
+  <div class="status-line"><div class="spinner"></div><span id="statusText">查询中...</span></div>
+</div>
+
+<div class="stats" id="statsArea" style="display:none"></div>
+
+<!-- 空结果状态 -->
+<div class="empty-state" id="emptyState" style="display:none">
+  <div class="icon">🔍</div>
+  <div class="title">未找到匹配记录</div>
+  <div class="hint" id="emptyHint">试试更短的关键词，或换一个查询类型</div>
+</div>
+
+<div id="resultArea" style="display:none">
+  <div class="card" style="padding:12px">
+    <div class="result-header">
+      <div class="left" id="resultCount"></div>
+      <div class="right">
+        <span class="mini-btn" id="copyBtn" onclick="copyTable()">📋 复制表格</span>
+        <span class="mini-btn" id="expandBtn" onclick="toggleExpand()">📖 展开全部</span>
+      </div>
+    </div>
+    <div class="filter-bar" id="filterBar"></div>
+    <div class="table-wrap" id="tableWrap"></div>
+    <div class="export-hint" id="exportHint">💡 点击「📊 导出」下载 CSV，飞书多维表格 → 导入 CSV 即可；「📋 复制表格」可直接粘贴进飞书表格/Excel</div>
+    <div class="source-link">数据源：<a href="https://docs.example.com/internal" target="_blank">车型C LUX 颜色配置表（全外饰）</a> + <a href="https://docs.example.com/internal" target="_blank">EXT_SML Surface Material List · AAR视图「4.玻璃」（玻璃业务）</a> + 本地导入车型</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const TOOL_ID = (function() {
+  const m = location.pathname.match(/\/api\/tools\/([^/]+)\/panel/);
+  return m ? m[1] : 'cmd_color_bom';
+})();
+const API_BASE = window.location.origin;
+
+const 车型C = '车型C LUX';
+const GLASS_MODEL = '车型C LUX · 玻璃业务';
+const SCOPE_ALL = '__ALL__';
+const STORE_KEY = 'cmd_color_bom_imported_v1';
+
+/* ══ 内置数据集②：玻璃业务（来源：飞书《车型C-LUX_EXT_SML Surface Material List》AAR视图 → 系统"4. 玻璃"全部BOM零件）══
+   与后端 index.js 的全外饰数据并存，用户在「数据范围」中自选 */
+const GLASS_COLORS = [
+  {id:"NO.001",color_code:"02B",color_name:"高亮黑_02B",category:"黑色系",area:"EXT_SML·后侧围角窗玻璃总成",model:GLASS_MODEL,material:"铝合金",process:"冲压/阳极氧化",status:"待确认"},
+  {id:"NO.002",color_code:"MS10",color_name:"高光银_MS10",category:"银色系",area:"EXT_SML·后侧围角窗玻璃总成",model:GLASS_MODEL,material:"铝合金",process:"冲压/阳极氧化",status:"待确认"},
+  {id:"NO.003",color_code:"05B",color_name:"星钻黑_05B",category:"黑色系",area:"EXT_SML·天幕（普通/调光）",model:GLASS_MODEL,material:"TPV",process:"挤出+注塑接角",status:"待确认"},
+  {id:"NO.004",color_code:"02B",color_name:"高亮黑_02B",category:"黑色系",area:"EXT_SML·B柱外饰板装配总成",model:GLASS_MODEL,material:"PC+ABS",process:"一体注塑",status:"待确认"}
+];
+const GLASS_TEXTURES = [
+  {id:"NO.001",platform:"车型C LUX",category:"表面处理",code:"高亮"},
+  {id:"NO.002",platform:"车型C LUX",category:"电火花纹理",code:"VDI33 电火花"}
+];
+const NO_KW_TYPES = ['全部颜色','全部纹理','全量汇总'];
+const COLOR_TYPES = ['全部颜色','按颜色分类','按颜色名称','按颜色编码'];
+const TEXTURE_TYPES = ['全部纹理','按纹理分类','按纹理代码'];
+
+/* 静态兜底快捷标签 */
+const QUICK_FALLBACK = {
+  '按颜色分类': ['黑色系','灰色系','双色系','金属系','红色系','银色系','碳纤维系','暖色系','蓝色系','透明系','金色系'],
+  '按纹理分类': ['注塑纹理','电火花纹理','表面处理','碳纤维','织物','缝线','特殊工艺'],
+  '交叉查询': ['碳纤维','高亮黑','铝合金','ABS/PC','电火花','皮纹']
+};
+
+/* ── 列名别名映射（导入用）── */
+const COLOR_FIELD_DEFS = [
+  ['color_code', ['颜色编码','编码','色号','颜色代码','color_code','colorcode']],
+  ['color_name', ['颜色名称','名称','颜色','颜色描述','color_name','colorname']],
+  ['category',   ['颜色分类','分类','色系','类别','category']],
+  ['material',   ['材质类型','材质','材料','material']],
+  ['process',    ['工艺要求','工艺','表面处理','process']],
+  ['area',       ['组件区域','区域','部位','area']],
+  ['model',      ['适用车型','车型','项目','model']],
+  ['status',     ['状态','确认状态','status']],
+  ['id',         ['序号','编号','no','id']]
+];
+const TEXTURE_FIELD_DEFS = [
+  ['code',     ['纹理及代码','纹理代码','纹理','代码','编码','code']],
+  ['category', ['纹理分类','分类','类别','category']],
+  ['platform', ['适用平台','平台','适用车型','车型','platform']],
+  ['id',       ['序号','编号','no','id']]
+];
+const COLOR_FIELD_LABELS = {id:'序号',color_code:'颜色编码',color_name:'颜色名称',category:'颜色分类',material:'材质类型',process:'工艺要求',area:'组件区域',model:'适用车型',status:'状态'};
+const TEXTURE_FIELD_LABELS = {id:'序号',category:'纹理分类',code:'纹理及代码',platform:'适用平台'};
+
+/* ── 状态 ── */
+let lastResult = null;
+let viewResult = [];
+let isExpanded = false;
+let filterCat = null;
+let filterMat = null;
+let sortKey = null;
+let sortDir = 1;
+let currentKeyword = '';
+let lastQueryType = '';
+const MAX_VISIBLE_ROWS = 10;
+
+let importedSets = {};        // modelName -> {colors:[], textures:[]}
+let modenaColors = null;      // 后端数据缓存（首次查询时拉取）
+let modenaTextures = null;
+let pendingImport = null;     // {type, model, rows, skipped, fileName, mapping}
+
+/* ── 颜色色块映射 ── */
+const COLOR_SWATCH = {
+  '曜石黑':'#0e0e10','高亮黑':'#141416','星钻黑':'#15151a','水晶黑':'#0a0a12',
+  '石墨黑':'#1c1c1e','武士黑':'#1a1a1a','哑光黑':'#232323','至臻黑':'#101014',
+  '熏黑':'#141414','黑铬':'#16161a','黑色':'#1d1d1f',
+  '墨影灰':'#4a4a4f','深空灰':'#55565a','金属岩石灰':'#6b6b70','矿石灰':'#7d7d82',
+  '铠衣灰':'#63666a','薄雾灰':'#9aa0a6','大象灰':'#8f8f94','页岩黑':'#333438',
+  '金属灰':'#77787c','Cool Gray':'#828282',
+  '明红':'#e60012','宝石红':'#a80016','胭脂红':'#c2185b','凌动红':'#d50032',
+  '银色':'#c0c4c9','闪银灰':'#b8bcc2','暗夜银':'#8a8d93','高光银':'#d7dade','闪镀银':'#ccd0d6',
+  '淡泊金':'#c9a86a','高光金':'#d4af37','古铜金':'#a06b3f',
+  '普鲁士蓝':'#003153','蝴蝶兰':'#4b5cc4','暗夜蓝':'#1b2a4a',
+  '闪电紫':'#7b2d8e','陶瓷白':'#f2f0ea','RAL9016':'#f1f0ea',
+  '拿铁棕':'#8d6e63','驼卡其':'#b8a078','砂陶米':'#d8c3a5',
+  '潘通11C':'#f5d200','碳纤维':'#26262b','铝本色':'#c8cbcf','锈不锈钢':'#6e5f4b'
+};
+const CAT_SWATCH = {
+  '黑色系':'#1d1d1f','灰色系':'#8e8e93','红色系':'#ff3b30','蓝色系':'#007aff',
+  '双色系':'#af52de','碳纤维系':'#26262b','透明系':'#5ac8fa','金属系':'#98989d',
+  '暖色系':'#ff9500','银色系':'#c7ccd2','金色系':'#c7a03c','白色系':'#e8e6e0',
+  '紫色系':'#7b2d8e','特殊':'#ff2d55','未定义':'#d2d2d7','待定':'#d2d2d7','其他':'#d2d2d7'
+};
+function swatchFor(row) {
+  const name = String(row.color_name || '');
+  const segs = name.split('+');
+  for (let s = 0; s < segs.length; s++) {
+    for (const key in COLOR_SWATCH) {
+      if (segs[s].indexOf(key) >= 0) return COLOR_SWATCH[key];
+    }
+  }
+  return CAT_SWATCH[row.category] || '#d2d2d7';
+}
+
+/* ── 工具函数 ── */
+function $(id) { return document.getElementById(id); }
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function hl(text) {
+  const s = String(text == null ? '' : text);
+  if (!currentKeyword) return escapeHtml(s);
+  const kw = currentKeyword.toLowerCase();
+  const low = s.toLowerCase();
+  let out = '', i = 0, idx = low.indexOf(kw);
+  while (idx >= 0) {
+    out += escapeHtml(s.slice(i, idx)) + '<mark>' + escapeHtml(s.slice(idx, idx + kw.length)) + '</mark>';
+    i = idx + kw.length;
+    idx = low.indexOf(kw, i);
+  }
+  return out + escapeHtml(s.slice(i));
+}
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+}
+function safeName(s) { return String(s).replace(/[\\/:*?"<>|\s]+/g,'').slice(0,20); }
+function currentScope() { return $('scopeSelect').value || SCOPE_ALL; }
+function srcLabel(src) {
+  if (src === 车型C) return '内置·全外饰';
+  if (src === GLASS_MODEL) return '内置·玻璃';
+  return escapeHtml(src || '-');
+}
+function srcTag(src) {
+  if (src === 车型C) return 'tag-default';
+  if (src === GLASS_MODEL) return 'tag-green';
+  return 'tag-import';
+}
+
+/* ══════════════ 多车型数据层 ══════════════ */
+
+function loadImported() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    Object.keys(data || {}).forEach(function(m) {
+      const set = data[m] || {};
+      const colors = (set.colors || []).map(function(r) { r._src = m; return r; });
+      const textures = (set.textures || []).map(function(r) { r._src = m; return r; });
+      if (colors.length || textures.length) importedSets[m] = { colors: colors, textures: textures };
+    });
+  } catch (_) { importedSets = {}; }
+}
+function saveImported() {
+  try {
+    const clone = {};
+    Object.keys(importedSets).forEach(function(m) {
+      clone[m] = {
+        colors: importedSets[m].colors.map(function(r) { const c = Object.assign({}, r); delete c._src; return c; }),
+        textures: importedSets[m].textures.map(function(r) { const c = Object.assign({}, r); delete c._src; return c; })
+      };
+    });
+    localStorage.setItem(STORE_KEY, JSON.stringify(clone));
+    return true;
+  } catch (_) {
+    showToast('⚠️ 浏览器存储不可用，导入数据仅本次会话有效');
+    return false;
+  }
+}
+function importedModels() { return Object.keys(importedSets).sort(function(a,b){ return a.localeCompare(b,'zh'); }); }
+function colorsOf(src)  {
+  if (src === 车型C) return modenaColors || [];
+  if (src === GLASS_MODEL) return GLASS_COLORS.map(function(r){ const c = Object.assign({}, r); c._src = GLASS_MODEL; return c; });
+  return ((importedSets[src] || {}).colors || []);
+}
+function texturesOf(src){
+  if (src === 车型C) return modenaTextures || [];
+  if (src === GLASS_MODEL) return GLASS_TEXTURES.map(function(r){ const c = Object.assign({}, r); c._src = GLASS_MODEL; return c; });
+  return ((importedSets[src] || {}).textures || []);
+}
+function scopeSources(scope) {
+  if (scope === SCOPE_ALL) return [车型C, GLASS_MODEL].concat(importedModels());
+  return [scope];
+}
+function colorsInScope(scope) {
+  let out = [];
+  scopeSources(scope).forEach(function(s){ out = out.concat(colorsOf(s)); });
+  return out;
+}
+function texturesInScope(scope) {
+  let out = [];
+  scopeSources(scope).forEach(function(s){ out = out.concat(texturesOf(s)); });
+  return out;
+}
+
+/* ── 范围 / 已导入标签 / 副标题刷新（实时更新筛选内容）── */
+function rebuildScopeSelect() {
+  const sel = $('scopeSelect');
+  const prev = sel.value || SCOPE_ALL;
+  const models = importedModels();
+  let html = '<option value="' + SCOPE_ALL + '">全部数据（全外饰 + 玻璃业务' + (models.length ? ' + 已导入' : '') + '）</option>';
+  html += '<option value="' + 车型C + '">车型C LUX · 全外饰（内置）</option>';
+  html += '<option value="' + GLASS_MODEL + '">车型C LUX · 玻璃业务（内置）</option>';
+  models.forEach(function(m) { html += '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) + '（已导入）</option>'; });
+  sel.innerHTML = html;
+  const stillExists = prev === SCOPE_ALL || prev === 车型C || prev === GLASS_MODEL || models.indexOf(prev) >= 0;
+  sel.value = stillExists ? prev : SCOPE_ALL;
+}
+function rebuildImportedChips() {
+  const wrap = $('importedChips');
+  const models = importedModels();
+  if (!models.length) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+  wrap.style.display = 'flex';
+  wrap.innerHTML = '';
+  models.forEach(function(m) {
+    const set = importedSets[m];
+    const chip = document.createElement('span');
+    chip.className = 'ichip';
+    chip.innerHTML = '<b>' + escapeHtml(m) + '</b> 颜色' + set.colors.length + ' · 纹理' + set.textures.length +
+      ' <span class="del" data-model="' + escapeHtml(m) + '" title="删除该车型数据">×</span>';
+    chip.querySelector('.del').onclick = function() { removeImported(m); };
+    wrap.appendChild(chip);
+  });
+}
+function updateSubtitle() {
+  let ci = 0, ti = 0;
+  importedModels().forEach(function(m) { ci += importedSets[m].colors.length; ti += importedSets[m].textures.length; });
+  const n = importedModels().length;
+  $('subtitle').textContent = '车型C LUX · 全外饰 ' + (70 + ci) + '条颜色/' + (73 + ti) + '条纹理' +
+    ' · 玻璃业务 ' + GLASS_COLORS.length + '条颜色/' + GLASS_TEXTURES.length + '条纹理' +
+    (n ? ' · 已导入 ' + n + ' 个车型' : '');
+}
+function removeImported(model) {
+  if (!confirm('确定删除已导入的「' + model + '」数据（颜色' + importedSets[model].colors.length +
+      '条 · 纹理' + importedSets[model].textures.length + '条）？')) return;
+  delete importedSets[model];
+  saveImported();
+  refreshImportUI();
+  showToast('🗑 已删除「' + model + '」');
+  maybeRerun();
+}
+function refreshImportUI() {
+  rebuildScopeSelect();
+  rebuildImportedChips();
+  updateSubtitle();
+  onTypeChange(); // 用当前范围数据重建快捷标签
+}
+function onScopeChange() {
+  onTypeChange();
+  maybeRerun();
+}
+/* 有查询结果时自动重查，让筛选内容实时更新 */
+function maybeRerun() {
+  if (!lastResult) return;
+  const t = $('queryType').value;
+  if (NO_KW_TYPES.indexOf(t) < 0 && !$('keyword').value.trim()) return;
+  run();
+}
+
+/* ── 导入模板（内嵌，点击下载）── */
+const TEMPLATES = {
+  colors: {
+    name: '导入模板_颜色配置.csv',
+    lines: [
+      '序号,颜色编码,颜色名称,颜色分类,材质类型,工艺要求,组件区域,适用车型,状态',
+      '1,X01,星空蓝_X01,蓝色系,ABS/PC,星空蓝喷涂,EXT,示例车型,待确认',
+      '2,X02,幻夜紫_X02,紫色系,铝合金,幻夜紫喷涂+精车,EXT,示例车型,待确认',
+      '3,,,,,,,,'
+    ]
+  },
+  textures: {
+    name: '导入模板_纹理代码.csv',
+    lines: [
+      '序号,纹理分类,纹理及代码,适用平台',
+      '1,注塑纹理,星辉纹01_XG01,示例车型',
+      '2,表面处理,星空镭雕,示例车型'
+    ]
+  }
+};
+function templateCSV(type) {
+  const t = TEMPLATES[type];
+  if (!t) return null;
+  return '\ufeff' + t.lines.join('\r\n') + '\r\n';
+}
+function downloadTemplate(type) {
+  const t = TEMPLATES[type];
+  if (!t) { showToast('⚠️ 未知模板类型'); return; }
+  const blob = new Blob([templateCSV(type)], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = t.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+  showToast('✅ 模板已下载，按模板填写后拖入上方即可导入');
+}
+
+/* ══════════════ CSV/TSV 导入 ══════════════ */
+
+function toggleImportCard() {
+  const card = $('importCard');
+  card.style.display = card.style.display === 'none' ? 'block' : 'none';
+  if (card.style.display === 'block') $('manualCard').style.display = 'none';
+}
+function cancelImport() {
+  pendingImport = null;
+  $('importPreview').classList.remove('show');
+  $('importPreview').innerHTML = '';
+  $('confirmImportBtn').disabled = true;
+  $('importCard').style.display = 'none';
+}
+
+function parseCSVText(text) {
+  text = String(text || '').replace(/^\uFEFF/, '');
+  const firstLine = text.split(/\r?\n/, 1)[0] || '';
+  const tabs = firstLine.split('\t').length - 1;
+  const commas = firstLine.split(',').length - 1;
+  const delim = tabs >= commas && tabs > 0 ? '\t' : ',';
+  const rows = [];
+  let row = [], cell = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQ) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { cell += '"'; i++; }
+        else inQ = false;
+      } else cell += ch;
+    } else if (ch === '"' && cell === '') {
+      inQ = true;
+    } else if (ch === delim) {
+      row.push(cell); cell = '';
+    } else if (ch === '\n') {
+      row.push(cell); rows.push(row); row = []; cell = '';
+    } else if (ch !== '\r') {
+      cell += ch;
+    }
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(function(r) { return r.some(function(c){ return String(c).trim() !== ''; }); });
+}
+
+function normHeader(h) { return String(h || '').trim().toLowerCase(); }
+function matchFields(headers, defs) {
+  const map = {};      // field -> colIndex
+  const taken = {};
+  headers.forEach(function(hRaw, idx) {
+    const h = normHeader(hRaw);
+    if (!h) return;
+    for (let d = 0; d < defs.length; d++) {
+      const field = defs[d][0], aliases = defs[d][1];
+      if (map[field] !== undefined) continue;
+      for (let a = 0; a < aliases.length; a++) {
+        if (h === aliases[a].toLowerCase()) { map[field] = idx; taken[idx] = 1; break; }
+      }
+      if (map[field] !== undefined) break;
+    }
+  });
+  return map;
+}
+function detectType(headers) {
+  const hs = headers.map(normHeader);
+  let c = false, t = false;
+  hs.forEach(function(h) {
+    if (h.indexOf('颜色') >= 0 || h === '色号') c = true;
+    if (h.indexOf('纹理') >= 0) t = true;
+  });
+  if (c && !t) return 'colors';
+  if (t && !c) return 'textures';
+  return null; // 无法判定 / 冲突
+}
+
+function buildImportRows(grid, type, model) {
+  const headers = grid[0];
+  const defs = type === 'colors' ? COLOR_FIELD_DEFS : TEXTURE_FIELD_DEFS;
+  const map = matchFields(headers, defs);
+  const rows = [];
+  let skipped = 0;
+  for (let i = 1; i < grid.length; i++) {
+    const r = grid[i];
+    function get(field) {
+      const idx = map[field];
+      if (idx === undefined) return '';
+      return String(r[idx] == null ? '' : r[idx]).trim();
+    }
+    if (type === 'colors') {
+      const code = get('color_code'), name = get('color_name');
+      if (!code && !name) { skipped++; continue; }
+      rows.push({
+        id: get('id') || ('NO.' + String(rows.length + 1).padStart(3, '0')),
+        color_code: code || name,
+        color_name: name || code,
+        category: get('category') || '未分类',
+        material: get('material') || '-',
+        process: get('process') || '-',
+        area: get('area') || '-',
+        model: get('model') || model,
+        status: get('status') || '已导入',
+        _src: model
+      });
+    } else {
+      const code = get('code');
+      if (!code) { skipped++; continue; }
+      rows.push({
+        id: get('id') || ('NO.' + String(rows.length + 1).padStart(3, '0')),
+        category: get('category') || '',
+        code: code,
+        platform: get('platform') || model,
+        _src: model
+      });
+    }
+  }
+  return { rows: rows, skipped: skipped, map: map };
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  let text;
+  try {
+    const buf = await file.arrayBuffer();
+    text = new TextDecoder('utf-8').decode(buf);
+    if (text.indexOf('\uFFFD') >= 0) {           // 疑似 GBK（Excel 另存的 CSV）
+      try { text = new TextDecoder('gbk').decode(buf); } catch (_) {}
+    }
+  } catch (e) { alert('读取文件失败：' + e.message); return; }
+
+  const grid = parseCSVText(text);
+  if (grid.length < 2) { alert('文件内容为空或只有表头，无法导入'); return; }
+
+  let type = $('importType').value;
+  if (type === 'auto') {
+    type = detectType(grid[0]);
+    if (!type) { alert('无法自动识别数据类型（表头中未找到"颜色"或"纹理"相关列），请手动选择数据类型后重新导入'); return; }
+  }
+
+  const modelInput = $('importModel');
+  if (!modelInput.value.trim()) {
+    modelInput.value = file.name.replace(/\.[^.]+$/, '').replace(/[\s_\-](颜色|纹理|配置|bom|colors?|textures?).*$/i, '');
+  }
+
+  const model = modelInput.value.trim();
+  const built = buildImportRows(grid, type, model || '未命名车型');
+  if (!built.rows.length) { alert('未解析出有效数据行，请检查列名是否与要求一致'); return; }
+
+  pendingImport = {
+    type: type, model: model, rows: built.rows, skipped: built.skipped,
+    fileName: file.name, map: built.map, headers: grid[0]
+  };
+  renderImportPreview();
+}
+
+function renderImportPreview() {
+  const p = pendingImport;
+  const box = $('importPreview');
+  const labels = p.type === 'colors' ? COLOR_FIELD_LABELS : TEXTURE_FIELD_LABELS;
+  const defs = p.type === 'colors' ? COLOR_FIELD_DEFS : TEXTURE_FIELD_DEFS;
+
+  let mapHtml = '';
+  defs.forEach(function(d) {
+    const field = d[0];
+    const idx = p.map[field];
+    mapHtml += labels[field] + '：' + (idx !== undefined ? '<b>' + escapeHtml(p.headers[idx]) + '</b>' : '<span class="warn">（缺失，用默认值）</span>') + '　';
+  });
+
+  let tableHtml = '<table class="ip-table"><thead><tr>';
+  Object.keys(labels).forEach(function(f) { tableHtml += '<th>' + labels[f] + '</th>'; });
+  tableHtml += '</tr></thead><tbody>';
+  p.rows.slice(0, 5).forEach(function(r) {
+    tableHtml += '<tr>';
+    Object.keys(labels).forEach(function(f) { tableHtml += '<td>' + escapeHtml(r[f]) + '</td>'; });
+    tableHtml += '</tr>';
+  });
+  tableHtml += '</tbody></table>';
+
+  const existing = importedSets[p.model] ? importedSets[p.model][p.type].length : 0;
+  box.innerHTML =
+    '<div class="ip-meta">' +
+      '📄 <b>' + escapeHtml(p.fileName) + '</b> → 识别为 <b>' + (p.type === 'colors' ? '颜色配置' : '纹理代码') + '</b>，车型 <b>' + escapeHtml(p.model) + '</b><br>' +
+      '有效数据 <b>' + p.rows.length + '</b> 行' + (p.skipped ? '，<span class="warn">跳过 ' + p.skipped + ' 行（缺关键列）</span>' : '') + '<br>' +
+      '列映射：' + mapHtml +
+      (existing ? '<br><span class="warn">⚠️ 该车型已有' + (p.type === 'colors' ? '颜色' : '纹理') + '数据 ' + existing + ' 条，确认导入将覆盖</span>' : '') +
+    '</div>' + tableHtml;
+  box.classList.add('show');
+  $('confirmImportBtn').disabled = false;
+}
+
+function confirmImport() {
+  const p = pendingImport;
+  if (!p) return;
+  const model = p.model.trim();
+  if (!model) { alert('请填写车型名称'); return; }
+  if (model === 车型C || model === GLASS_MODEL) { alert('「' + model + '」为内置数据集，请更换其他车型名称'); return; }
+
+  if (!importedSets[model]) importedSets[model] = { colors: [], textures: [] };
+  importedSets[model][p.type] = p.rows;
+  saveImported();
+
+  const label = p.type === 'colors' ? '颜色' : '纹理';
+  refreshImportUI();
+  showToast('✅ 已导入「' + model + '」' + label + ' ' + p.rows.length + ' 条');
+
+  pendingImport = null;
+  $('importPreview').classList.remove('show');
+  $('importPreview').innerHTML = '';
+  $('confirmImportBtn').disabled = true;
+  $('fileInput').value = '';
+  maybeRerun(); // 若已有查询结果，实时刷新
+}
+
+/* ══════════════ ⌨️ 自定义手动录入（颜色/纹理 → BOM，纯前端，不动后端逻辑）══════════════ */
+
+let manualMode = 'text';      // text | form
+let pendingManual = null;     // {type, model, rows}
+
+const MANUAL_PLACEHOLDER = {
+  colors: '每行一个产品，字段依次为：颜色编码，颜色名称，颜色分类，材质类型，工艺要求（可只填前几列，缺省自动补齐）\n示例：\n02B，高亮黑，黑色系，ABS/PC，高光喷涂\nMG02/深空灰/灰色系/铝合金/深空灰喷涂\n星钻黑                ← 只写名称也可以，分类自动推断',
+  textures: '每行一条纹理，字段依次为：纹理分类，纹理及代码，适用平台（可只填代码）\n示例：\n注塑纹理，星辉纹01_XG01\n表面处理/镜面抛光/车型C\nVDI34电火花'
+};
+const MANUAL_COLOR_FIELDS = [['color_code','编码'],['color_name','名称'],['category','分类'],['material','材质'],['process','工艺']];
+const MANUAL_TEX_FIELDS = [['category','分类'],['code','纹理代码']];
+/* 分类自动推断（名称缺分类时兜底） */
+const CATEGORY_GUESS = [
+  ['碳纤维','碳纤维系'],['透明','透明系'],['黑','黑色系'],['灰','灰色系'],
+  ['银','银色系'],['金','金色系'],['红','红色系'],['蓝','蓝色系'],
+  ['紫','紫色系'],['白','白色系'],['卡其','暖色系'],['驼','暖色系'],
+  ['棕','暖色系'],['米','暖色系']
+];
+function guessCategory(name) {
+  for (let i = 0; i < CATEGORY_GUESS.length; i++) {
+    if (name.indexOf(CATEGORY_GUESS[i][0]) >= 0) return CATEGORY_GUESS[i][1];
+  }
+  return '未分类';
+}
+
+function toggleManualCard() {
+  const card = $('manualCard');
+  card.style.display = card.style.display === 'none' ? 'block' : 'none';
+  if (card.style.display === 'block') $('importCard').style.display = 'none';
+}
+function cancelManual() {
+  hideManualPreview();
+  $('manualText').value = '';
+  $('manualFormBody').innerHTML = '';
+  if (manualMode === 'form') addManualFormRow();
+  $('manualCard').style.display = 'none';
+}
+function setManualMode(mode) {
+  manualMode = mode;
+  $('manualTextPane').style.display = mode === 'text' ? 'block' : 'none';
+  $('manualFormPane').style.display = mode === 'form' ? 'block' : 'none';
+  $('mmText').classList.toggle('active', mode === 'text');
+  $('mmForm').classList.toggle('active', mode === 'form');
+  hideManualPreview();
+  if (mode === 'form') {
+    rebuildManualFormHead();
+    if (!$('manualFormBody').querySelector('.mform-row')) addManualFormRow();
+  }
+}
+function manualFormFields() {
+  return $('manualType').value === 'colors' ? MANUAL_COLOR_FIELDS : MANUAL_TEX_FIELDS;
+}
+function rebuildManualFormHead() {
+  const head = $('manualFormHead');
+  if (!head) return;
+  head.innerHTML = manualFormFields().map(function(f){ return '<span>' + f[1] + '</span>'; }).join('') + '<span style="flex:0 0 22px"></span>';
+}
+function onManualTypeChange() {
+  $('manualText').placeholder = MANUAL_PLACEHOLDER[$('manualType').value] || '';
+  $('manualFormBody').innerHTML = '';
+  rebuildManualFormHead();
+  if (manualMode === 'form') addManualFormRow();
+  hideManualPreview();
+}
+function addManualFormRow() {
+  const body = $('manualFormBody');
+  const row = document.createElement('div');
+  row.className = 'mform-row';
+  manualFormFields().forEach(function(f) {
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.dataset.f = f[0];
+    inp.placeholder = f[1];
+    inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); generateManualPreview(); } });
+    row.appendChild(inp);
+  });
+  const del = document.createElement('span');
+  del.className = 'mform-del';
+  del.textContent = '×';
+  del.title = '删除此行';
+  del.onclick = function() { row.remove(); };
+  row.appendChild(del);
+  body.appendChild(row);
+}
+
+/* ── 批量文本解析 ── */
+function splitManualLine(line) {
+  let parts = line.split(/[\t,，、|;；]/).map(function(s){ return s.trim(); });
+  if (parts.length === 1 && line.indexOf('/') >= 0) {
+    parts = line.split('/').map(function(s){ return s.trim(); });
+  }
+  while (parts.length > 1 && parts[parts.length - 1] === '') parts.pop();
+  return parts;
+}
+function buildManualColorsFromText(text) {
+  const rows = [];
+  text.split(/\r?\n/).forEach(function(raw) {
+    const line = raw.trim();
+    if (!line) return;
+    const p = splitManualLine(line);
+    if (!p.length || !p.some(function(x){ return x; })) return;
+    let code, name, cat, mat, proc, area;
+    if (p.length === 1) { name = p[0]; code = p[0]; cat = ''; mat = ''; proc = ''; area = ''; }
+    else { code = p[0]; name = p[1] || p[0]; cat = p[2] || ''; mat = p[3] || ''; proc = p[4] || ''; area = p[5] || ''; }
+    if (!cat) cat = guessCategory(name);
+    rows.push({
+      color_code: code || name, color_name: name || code, category: cat || '未分类',
+      material: mat || '-', process: proc || '-', area: area || '-',
+      model: '', status: '手动录入'
+    });
+  });
+  return rows;
+}
+function buildManualTexturesFromText(text) {
+  const rows = [];
+  text.split(/\r?\n/).forEach(function(raw) {
+    const line = raw.trim();
+    if (!line) return;
+    const p = splitManualLine(line);
+    if (!p.length || !p.some(function(x){ return x; })) return;
+    if (p.length === 1) rows.push({ category: '', code: p[0], platform: '' });
+    else rows.push({ category: p[0], code: p[1] || p[0], platform: p[2] || '' });
+  });
+  return rows;
+}
+
+/* ── 逐行表单收集 ── */
+function collectManualForm() {
+  const isC = $('manualType').value === 'colors';
+  const rows = [];
+  document.querySelectorAll('#manualFormBody .mform-row').forEach(function(row) {
+    const vals = {};
+    row.querySelectorAll('input').forEach(function(inp) { vals[inp.dataset.f] = inp.value.trim(); });
+    if (!Object.keys(vals).some(function(k){ return vals[k]; })) return;
+    if (isC) {
+      const name = vals.color_name || vals.color_code;
+      if (!name) return;
+      rows.push({
+        color_code: vals.color_code || name, color_name: name,
+        category: vals.category || guessCategory(name),
+        material: vals.material || '-', process: vals.process || '-',
+        area: '-', model: '', status: '手动录入'
+      });
+    } else {
+      if (!vals.code) return;
+      rows.push({ category: vals.category || '', code: vals.code, platform: '' });
+    }
+  });
+  return rows;
+}
+
+/* ── 预览 / 确认 ── */
+function generateManualPreview() {
+  const type = $('manualType').value;
+  let rows;
+  if (manualMode === 'text') {
+    rows = type === 'colors' ? buildManualColorsFromText($('manualText').value)
+                             : buildManualTexturesFromText($('manualText').value);
+  } else {
+    rows = collectManualForm();
+  }
+  if (!rows.length) { alert('未解析出有效数据，请检查输入内容（批量文本每行一条；逐行表单至少填一列）'); return; }
+  const model = $('manualModel').value.trim() || '手动录入';
+  pendingManual = { type: type, model: model, rows: rows };
+  renderManualPreview();
+}
+function renderManualPreview() {
+  const p = pendingManual;
+  const box = $('manualPreview');
+  const isC = p.type === 'colors';
+  const cols = isC
+    ? [['color_code','颜色编码'],['color_name','颜色名称'],['category','颜色分类'],['material','材质类型'],['process','工艺要求']]
+    : [['category','纹理分类'],['code','纹理及代码'],['platform','适用平台']];
+  let tableHtml = '<table class="ip-table"><thead><tr>' +
+    cols.map(function(c){ return '<th>' + c[1] + '</th>'; }).join('') + '</tr></thead><tbody>';
+  p.rows.slice(0, 8).forEach(function(r) {
+    tableHtml += '<tr>' + cols.map(function(c){ return '<td>' + escapeHtml(r[c[0]] || (c[0] === 'platform' ? '-' : '')) + '</td>'; }).join('') + '</tr>';
+  });
+  tableHtml += '</tbody></table>';
+  if (p.rows.length > 8) {
+    tableHtml += '<div style="font-size:11px;color:#86868b;margin-top:4px">… 仅预览前 8 条，共 ' + p.rows.length + ' 条</div>';
+  }
+  const existing = importedSets[p.model] ? importedSets[p.model][p.type].length : 0;
+  box.innerHTML =
+    '<div class="ip-meta">' +
+      '✍️ 车型/项目 <b>' + escapeHtml(p.model) + '</b> · ' + (isC ? '颜色配置' : '纹理代码') + ' · 解析出 <b>' + p.rows.length + '</b> 条<br>' +
+      (existing ? '<span class="warn">该车型已有 ' + existing + ' 条' + (isC ? '颜色' : '纹理') + '，确认后将以「追加」方式并入（序号自动续编）</span><br>' : '') +
+      '确认后将生成标准 BOM 行，自动展示结果表，可直接导出 CSV 导入飞书多维表格' +
+    '</div>' + tableHtml;
+  box.classList.add('show');
+  $('confirmManualBtn').disabled = false;
+}
+function hideManualPreview() {
+  pendingManual = null;
+  $('manualPreview').classList.remove('show');
+  $('manualPreview').innerHTML = '';
+  $('confirmManualBtn').disabled = true;
+}
+function confirmManual() {
+  const p = pendingManual;
+  if (!p) return;
+  const model = ($('manualModel').value.trim() || p.model).trim();
+  if (!model) { alert('请填写车型/项目名称'); return; }
+  if (model === 车型C || model === GLASS_MODEL) { alert('「' + model + '」为内置数据集，请更换其他名称'); return; }
+
+  if (!importedSets[model]) importedSets[model] = { colors: [], textures: [] };
+  const arr = importedSets[model][p.type];
+  p.rows.forEach(function(r) {
+    const c = Object.assign({}, r);
+    c.id = 'NO.' + String(arr.length + 1).padStart(3, '0');
+    if (p.type === 'colors') { if (!c.model) c.model = model; }
+    else { if (!c.platform) c.platform = model; }
+    c._src = model;
+    arr.push(c);
+  });
+  const n = p.rows.length;
+  saveImported();
+  refreshImportUI();
+  showToast('✅ 已生成 BOM 表：「' + model + '」' + (p.type === 'colors' ? '颜色' : '纹理') + ' ' + n + ' 条');
+
+  // 清空录入状态
+  hideManualPreview();
+  $('manualText').value = '';
+  $('manualFormBody').innerHTML = '';
+  if (manualMode === 'form') addManualFormRow();
+  $('manualCard').style.display = 'none';
+
+  // 自动展示：切到该车型范围 + 全量查询，即刻呈现 BOM 表
+  $('scopeSelect').value = model;
+  $('queryType').value = p.type === 'colors' ? '全部颜色' : '全部纹理';
+  onTypeChange();
+  run();
+}
+
+/* ══════════════ 查询（后端=Modena数据源 + 本地=导入车型）══════════════ */
+
+async function fetchBackend(queryType, keyword) {
+  try {
+    const resp = await fetch(API_BASE + '/api/tools/' + TOOL_ID + '/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inputs: { queryType: queryType, keyword: keyword } })
+    });
+    if (!resp.ok) {
+      let bodyText = '';
+      try { bodyText = (await resp.text()).slice(0, 500); } catch (_) {}
+      alert('HTTP ' + resp.status + ': ' + bodyText);
+      return null;
+    }
+    let data;
+    const text = await resp.text();
+    try { data = JSON.parse(text); } catch (_) { alert('后端返回不是 JSON'); return null; }
+    const outputs = data.outputs || data;
+    if (data.success === false || data.error || outputs.error) {
+      alert(String(data.error || outputs.error || '未知错误'));
+      return null;
+    }
+    return outputs;
+  } catch (e) {
+    alert('请求失败：' + e.message);
+    return null;
+  }
+}
+function tagModena(rows) { return rows.map(function(r) { const c = Object.assign({}, r); c._src = 车型C; return c; }); }
+
+async function ensureModenaData(queryType) {
+  const scope = currentScope();
+  if (!(scope === SCOPE_ALL || scope === 车型C)) return true;
+  const needC = COLOR_TYPES.indexOf(queryType) >= 0 || queryType === '交叉查询' || queryType === '全量汇总';
+  const needT = TEXTURE_TYPES.indexOf(queryType) >= 0 || queryType === '交叉查询' || queryType === '全量汇总';
+  if (needC && !modenaColors) {
+    const o = await fetchBackend('全部颜色', '');
+    if (!o) return false;
+    modenaColors = tagModena(o.result || []);
+  }
+  if (needT && !modenaTextures) {
+    const o = await fetchBackend('全部纹理', '');
+    if (!o) return false;
+    modenaTextures = tagModena(o.result || []);
+  }
+  return true;
+}
+
+function colorMatch(c, lower) {
+  return c.category.indexOf(lower) >= 0 ||
+    String(c.color_name).toLowerCase().indexOf(lower) >= 0 ||
+    String(c.color_code).toLowerCase().indexOf(lower) >= 0 ||
+    String(c.material).toLowerCase().indexOf(lower) >= 0 ||
+    String(c.process).toLowerCase().indexOf(lower) >= 0;
+}
+function texMatch(t, lower) {
+  return String(t.category || '').toLowerCase().indexOf(lower) >= 0 ||
+    String(t.code).toLowerCase().indexOf(lower) >= 0;
+}
+function mapTexCross(t) {
+  return { id: t.id, color_code: t.code, color_name: t.code, category: t.category || '未分类',
+    material: t.platform || '-', process: '-', area: '-', status: '-', _src: t._src };
+}
+function mergedQuery(scope, type, kw) {
+  const lower = kw.toLowerCase();
+  const out = [];
+  scopeSources(scope).forEach(function(src) {
+    const cs = colorsOf(src), ts = texturesOf(src);
+    if (COLOR_TYPES.indexOf(type) >= 0) {
+      cs.forEach(function(c) { if (!kw || colorMatch(c, lower)) out.push(c); });
+    }
+    if (TEXTURE_TYPES.indexOf(type) >= 0) {
+      ts.forEach(function(t) { if (!kw || texMatch(t, lower)) out.push(t); });
+    }
+    if (type === '交叉查询') {
+      cs.forEach(function(c) { if (colorMatch(c, lower)) out.push(c); });
+      ts.forEach(function(t) { if (texMatch(t, lower)) out.push(mapTexCross(t)); });
+    }
+  });
+  return out;
+}
+function localSummary(rows) {
+  const cats = {}, mats = {}, procs = {};
+  rows.forEach(function(r) {
+    cats[r.category] = 1; mats[r.material] = 1; procs[r.process] = 1;
+  });
+  return { total: rows.length, categories: Object.keys(cats).length,
+    materials: Object.keys(mats).length, processes: Object.keys(procs).length };
+}
+
+async function run() {
+  const queryType = $('queryType').value;
+  const keyword = $('keyword').value.trim();
+  const scope = currentScope();
+  const btn = $('runBtn');
+
+  if (NO_KW_TYPES.indexOf(queryType) < 0 && !keyword) {
+    alert('请输入查询关键词');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ 查询中...';
+  $('statusCard').classList.add('show');
+  $('statusText').textContent = '正在查询...';
+  $('resultArea').style.display = 'none';
+  $('statsArea').style.display = 'none';
+  $('emptyState').style.display = 'none';
+  $('exportBtn').disabled = true;
+  isExpanded = false;
+
+  function restoreBtn() { btn.disabled = false; btn.textContent = '🔍 查询'; $('statusCard').classList.remove('show'); }
+
+  try {
+    if (!(await ensureModenaData(queryType))) { restoreBtn(); return; }
+
+    let result, summary = null;
+    if (queryType === '全量汇总') {
+      const cs = colorsInScope(scope), ts = texturesInScope(scope);
+      summary = localSummary(cs);
+      summary.colorCount = cs.length;
+      summary.textureCount = ts.length;
+      result = [{ type: '汇总', total: cs.length + ts.length }];
+    } else {
+      result = mergedQuery(scope, queryType, keyword);
+      const isColorRes = result.length > 0 && result[0].color_code !== undefined;
+      if (isColorRes && (queryType === '全部颜色' || result.length > 0)) summary = localSummary(result);
+    }
+
+    const outputs = { result: result, summary: summary, recordCount: result.length };
+    restoreBtn();
+
+    lastResult = result;
+    currentKeyword = keyword;
+    lastQueryType = queryType;
+    filterCat = null; filterMat = null; sortKey = null; sortDir = 1;
+
+    renderSummary(summary, result);
+    buildFilterBar();
+
+    if (result.length === 0) {
+      showEmpty(keyword);
+    } else {
+      applyView();
+      $('exportBtn').disabled = false;
+      $('exportHint').classList.add('show');
+    }
+
+    try {
+      const clean = Object.assign({}, outputs, {
+        result: result.map(function(r) { const c = Object.assign({}, r); delete c._src; return c; })
+      });
+      parent.postMessage({ type: 'tool-output', outputs: clean }, '*');
+    } catch (_) {}
+  } catch (e) {
+    restoreBtn();
+    alert('请求失败：' + e.message);
+  }
+}
+
+function showEmpty(keyword) {
+  $('resultArea').style.display = 'none';
+  $('emptyState').style.display = 'block';
+  $('emptyHint').textContent =
+    keyword ? '没有找到包含「' + keyword + '」的记录，试试更短的关键词或换一个数据范围'
+            : '当前数据范围内没有记录，可点「📥 导入其他车型」添加数据';
+}
+
+function renderSummary(summary, result) {
+  if (!summary) { $('statsArea').style.display = 'none'; return; }
+  const area = $('statsArea');
+  area.style.display = 'grid';
+  area.innerHTML =
+    '<div class="stat-item"><div class="stat-value">' + (summary.total || result.length) + '</div><div class="stat-label">总记录</div></div>' +
+    '<div class="stat-item"><div class="stat-value">' + (summary.categories || 0) + '</div><div class="stat-label">分类</div></div>' +
+    '<div class="stat-item"><div class="stat-value">' + (summary.materials || 0) + '</div><div class="stat-label">材质</div></div>' +
+    '<div class="stat-item"><div class="stat-value">' + (summary.processes || 0) + '</div><div class="stat-label">工艺</div></div>';
+}
+
+/* ── 快捷标签（按当前数据范围动态生成）── */
+function topDistinct(vals, cap) {
+  const cnt = {};
+  vals.forEach(function(v) { if (v) cnt[v] = (cnt[v] || 0) + 1; });
+  return Object.keys(cnt).sort(function(a, b) { return cnt[b] - cnt[a]; }).slice(0, cap || 12);
+}
+function getQuickList(type) {
+  const scope = currentScope();
+  if (type === '按颜色分类') {
+    const list = topDistinct(colorsInScope(scope).map(function(r){ return r.category; }));
+    return list.length ? list : QUICK_FALLBACK[type];
+  }
+  if (type === '按纹理分类') {
+    const list = topDistinct(texturesInScope(scope).map(function(r){ return r.category; }));
+    return list.length ? list : QUICK_FALLBACK[type];
+  }
+  if (type === '交叉查询') {
+    const cs = colorsInScope(scope);
+    const list = topDistinct(cs.map(function(r){ return r.category; }).concat(cs.map(function(r){ return r.material; })));
+    return list.length ? list : QUICK_FALLBACK[type];
+  }
+  return [];
+}
+
+function onTypeChange() {
+  const t = $('queryType').value;
+  const kw = $('kwField');
+  const bar = $('stickyBar');
+  const scroll = $('quickScroll');
+
+  $('keyword').value = $('keyword').value || ''; // 切换类型保留已输入关键词，便于多类型连查
+  document.querySelectorAll('.qtag').forEach(function(x) { x.classList.remove('active'); });
+
+  if (NO_KW_TYPES.indexOf(t) >= 0) {
+    kw.style.display = 'none';
+    bar.style.display = 'none';
+    return;
+  }
+
+  kw.style.display = 'block';
+  bar.style.display = 'block';
+  scroll.innerHTML = '';
+
+  getQuickList(t).forEach(function(o) {
+    const s = document.createElement('span');
+    s.className = 'qtag';
+    s.textContent = o;
+    s.onclick = function() {
+      $('keyword').value = o;
+      document.querySelectorAll('.qtag').forEach(function(x) { x.classList.remove('active'); });
+      s.classList.add('active');
+      run();
+    };
+    scroll.appendChild(s);
+  });
+}
+
+/* ── 二次筛选条 ── */
+function buildFilterBar() {
+  const bar = $('filterBar');
+  bar.innerHTML = '';
+  bar.classList.remove('show');
+  if (!lastResult || lastResult.length === 0) return;
+
+  const isColor = lastResult[0].color_code !== undefined;
+  const isTexture = lastResult[0].code !== undefined;
+  if (!isColor && !isTexture) return;
+
+  bar.classList.add('show');
+
+  function distinct(field, fallback) {
+    const seen = {}, list = [];
+    lastResult.forEach(function(r) {
+      const v = String(r[field] || fallback || '未分类');
+      if (!seen[v]) { seen[v] = 1; list.push(v); }
+    });
+    return list;
+  }
+  function chipRow(label, values, which) {
+    if (values.length <= 1) return document.createElement('div');
+    const row = document.createElement('div');
+    row.className = 'filter-row';
+    const lab = document.createElement('span');
+    lab.className = 'filter-label';
+    lab.textContent = label;
+    row.appendChild(lab);
+    const wrap = document.createElement('div');
+    wrap.className = 'filter-chips';
+    values.forEach(function(v) {
+      const c = document.createElement('span');
+      c.className = 'fchip';
+      c.dataset.which = which;
+      c.dataset.value = v;
+      c.textContent = v;
+      c.onclick = function() {
+        if (which === 'cat') filterCat = (filterCat === v) ? null : v;
+        else filterMat = (filterMat === v) ? null : v;
+        applyView();
+      };
+      wrap.appendChild(c);
+    });
+    row.appendChild(wrap);
+    return row;
+  }
+
+  if (isColor) {
+    bar.appendChild(chipRow('分类', distinct('category'), 'cat'));
+    bar.appendChild(chipRow('材质', distinct('material'), 'mat'));
+    bar.appendChild(chipRow('车型', distinct('_src'), 'src'));
+  } else {
+    bar.appendChild(chipRow('分类', distinct('category'), 'cat'));
+    bar.appendChild(chipRow('来源', distinct('_src'), 'src'));
+  }
+}
+
+let filterSrc = null; // 车型筛选
+function refreshChipStates() {
+  document.querySelectorAll('.fchip').forEach(function(c) {
+    const v = c.dataset.value;
+    c.classList.toggle('active',
+      (c.dataset.which === 'cat' && filterCat === v) ||
+      (c.dataset.which === 'mat' && filterMat === v) ||
+      (c.dataset.which === 'src' && filterSrc === v));
+  });
+  const bar = $('filterBar');
+  const active = filterCat || filterMat || filterSrc;
+  if (active && !bar.querySelector('.fchip.clear')) {
+    const clear = document.createElement('span');
+    clear.className = 'fchip clear';
+    clear.textContent = '✕ 清除筛选';
+    clear.onclick = function() { filterCat = null; filterMat = null; filterSrc = null; applyView(); };
+    const firstRow = bar.querySelector('.filter-chips');
+    if (firstRow) firstRow.parentNode.appendChild(clear);
+  } else if (!active) {
+    const clear = bar.querySelector('.fchip.clear');
+    if (clear) clear.remove();
+  }
+}
+
+/* ── 视图计算：筛选 + 排序 ── */
+function applyView() {
+  if (!lastResult) return;
+  let rows = lastResult.slice();
+  if (filterCat) rows = rows.filter(function(r){ return String(r.category || '未分类') === filterCat; });
+  if (filterMat) rows = rows.filter(function(r){ return String(r.material || '') === filterMat; });
+  if (filterSrc) rows = rows.filter(function(r){ return String(r._src || '') === filterSrc; });
+
+  if (sortKey) {
+    const key = sortKey, dir = sortDir;
+    rows.sort(function(a, b) {
+      const va = String(a[key] == null ? '' : a[key]);
+      const vb = String(b[key] == null ? '' : b[key]);
+      let c;
+      if (/^\d+$/.test(va) && /^\d+$/.test(vb)) c = parseInt(va,10) - parseInt(vb,10);
+      else c = va.localeCompare(vb, 'zh');
+      return c * dir;
+    });
+  }
+
+  viewResult = rows;
+  refreshChipStates();
+
+  if (rows.length === 0) {
+    $('resultArea').style.display = 'none';
+    $('emptyState').style.display = 'block';
+    $('emptyHint').textContent = '当前筛选条件下没有记录，点「✕ 清除筛选」查看全部';
+    $('exportBtn').disabled = true;
+    return;
+  }
+  $('emptyState').style.display = 'none';
+  $('exportBtn').disabled = false;
+  renderTableArea();
+}
+
+function renderTableArea() {
+  const result = viewResult;
+  $('resultArea').style.display = 'block';
+
+  const filtered = (filterCat || filterMat || filterSrc) && lastResult && result.length !== lastResult.length;
+  $('resultCount').textContent =
+    filtered ? '显示 ' + result.length + ' / ' + lastResult.length + ' 条记录'
+             : '共 ' + result.length + ' 条记录';
+
+  const expandBtn = $('expandBtn');
+  if (result.length > MAX_VISIBLE_ROWS) {
+    expandBtn.style.display = 'inline-block';
+    expandBtn.textContent = isExpanded ? '📖 收起' : '📖 展开全部（' + result.length + '条）';
+  } else {
+    expandBtn.style.display = 'none';
+  }
+
+  buildTable(result);
+}
+
+/* ── 表格构建 ── */
+const COLOR_COLS = [
+  {field:'id', label:'#', sortable:true},
+  {field:'color_code', label:'编码', sortable:true},
+  {field:'color_name', label:'名称', sortable:true},
+  {field:'category', label:'分类', sortable:true},
+  {field:'material', label:'材质', sortable:true},
+  {field:'process', label:'工艺', sortable:true},
+  {field:'_src', label:'来源', sortable:true}
+];
+const TEXTURE_COLS = [
+  {field:'id', label:'#', sortable:true},
+  {field:'category', label:'分类', sortable:true},
+  {field:'code', label:'纹理及代码', sortable:true},
+  {field:'platform', label:'平台', sortable:true},
+  {field:'_src', label:'来源', sortable:true}
+];
+
+function buildTable(result) {
+  const isColor = result[0].color_code !== undefined;
+  const isTexture = result[0].code !== undefined;
+  const cols = isColor ? COLOR_COLS : (isTexture ? TEXTURE_COLS : null);
+  const colCount = cols ? cols.length : Object.keys(result[0]).length;
+
+  const visibleResult = isExpanded ? result : result.slice(0, MAX_VISIBLE_ROWS);
+  let html = '<table><thead><tr>';
+
+  if (cols) {
+    cols.forEach(function(c) {
+      const arrow = (sortKey === c.field) ? '<span class="arrow">' + (sortDir > 0 ? '↑' : '↓') + '</span>' : '';
+      html += '<th' + (c.sortable ? ' class="sortable" data-field="' + c.field + '" onclick="onSort(\'' + c.field + '\')"' : '') + '>' + c.label + arrow + '</th>';
+    });
+  } else {
+    Object.keys(result[0]).forEach(function(k) { if (k !== '_src') html += '<th>' + escapeHtml(k) + '</th>'; });
+  }
+  html += '</tr></thead><tbody>';
+
+  const TAG_COLORS = {
+    '黑色系':'tag-black','灰色系':'tag-gray','红色系':'tag-red','蓝色系':'tag-blue',
+    '双色系':'tag-purple','碳纤维系':'tag-black','透明系':'tag-teal','金属系':'tag-gray',
+    '暖色系':'tag-orange','银色系':'tag-teal','金色系':'tag-gold','白色系':'tag-white',
+    '紫色系':'tag-purple','特殊':'tag-pink','未定义':'tag-default','待定':'tag-default','其他':'tag-default'
+  };
+
+  visibleResult.forEach(function(row) {
+    html += '<tr>';
+    if (isColor) {
+      const tc = TAG_COLORS[row.category] || 'tag-default';
+      const num = row.id ? String(row.id).replace('NO.', '') : '';
+      const trans = row.category === '透明系';
+      const sw = '<span class="swatch" style="background:' + swatchFor(row) + (trans ? ';opacity:.45' : '') + '" title="' + escapeHtml(row.color_name) + '"></span>';
+      const src = srcLabel(row._src);
+      html += '<td>' + hl(num) + '</td>';
+      html += '<td>' + sw + '<strong>' + hl(row.color_code) + '</strong></td>';
+      html += '<td>' + hl(row.color_name) + '</td>';
+      html += '<td><span class="tag ' + tc + '">' + hl(row.category) + '</span></td>';
+      html += '<td>' + hl(row.material) + '</td>';
+      html += '<td>' + hl(row.process) + '</td>';
+      html += '<td><span class="tag ' + srcTag(row._src) + '">' + src + '</span></td>';
+    } else if (isTexture) {
+      const num = row.id ? String(row.id).replace('NO.', '') : '';
+      html += '<td>' + hl(num) + '</td>';
+      html += '<td>' + hl(row.category || '未分类') + '</td>';
+      html += '<td><strong>' + hl(row.code) + '</strong></td>';
+      html += '<td>' + hl(row.platform || '-') + '</td>';
+      html += '<td><span class="tag ' + srcTag(row._src) + '">' + srcLabel(row._src) + '</span></td>';
+    } else {
+      Object.keys(result[0]).forEach(function(k) { if (k !== '_src') html += '<td>' + hl(row[k]) + '</td>'; });
+    }
+    html += '</tr>';
+  });
+
+  if (!isExpanded && result.length > MAX_VISIBLE_ROWS) {
+    html += '<tr><td colspan="' + colCount + '" style="text-align:center;color:#86868b;padding:12px;font-size:12px">还有 ' + (result.length - MAX_VISIBLE_ROWS) + ' 条记录，点击「展开全部」查看</td></tr>';
+  }
+
+  html += '</tbody></table>';
+  $('tableWrap').innerHTML = html;
+}
+
+function onSort(field) {
+  if (sortKey === field) { sortDir = -sortDir; }
+  else { sortKey = field; sortDir = 1; }
+  applyView();
+}
+
+function toggleExpand() {
+  if (!viewResult || viewResult.length === 0) return;
+  isExpanded = !isExpanded;
+  renderTableArea();
+}
+
+function clearAll() {
+  lastResult = null;
+  viewResult = [];
+  isExpanded = false;
+  filterCat = null; filterMat = null; filterSrc = null; sortKey = null; sortDir = 1;
+  currentKeyword = '';
+  $('resultArea').style.display = 'none';
+  $('statsArea').style.display = 'none';
+  $('emptyState').style.display = 'none';
+  $('filterBar').innerHTML = '';
+  $('filterBar').classList.remove('show');
+  $('exportBtn').disabled = true;
+  $('exportHint').classList.remove('show');
+  $('stickyBar').style.display = 'none';
+  $('queryType').value = '全部颜色';
+  $('keyword').value = '';
+  onTypeChange();
+}
+
+/* ── 取当前视图的表头 + 行（导出与复制共用）── */
+function currentRows() {
+  if (!viewResult || viewResult.length === 0) return null;
+  const isColor = viewResult[0].color_code !== undefined;
+  const isTexture = viewResult[0].code !== undefined;
+  let headers, rows;
+  if (isColor) {
+    headers = ['序号','颜色编码','颜色名称','颜色分类','材质类型','工艺要求','组件区域','适用车型','状态','数据来源'];
+    rows = viewResult.map(function(r) { return [r.id, r.color_code, r.color_name, r.category, r.material, r.process, r.area, r.model, r.status, r._src || '']; });
+  } else if (isTexture) {
+    headers = ['序号','纹理分类','纹理及代码','适用平台','数据来源'];
+    rows = viewResult.map(function(r) { return [r.id, r.category || '', r.code, r.platform || '', r._src || '']; });
+  } else {
+    headers = Object.keys(viewResult[0]).filter(function(h){ return h !== '_src'; });
+    rows = viewResult.map(function(r) { return headers.map(function(h){ return r[h]; }); });
+  }
+  return { headers: headers, rows: rows };
+}
+
+function copyTable() {
+  const data = currentRows();
+  if (!data) { showToast('暂无数据可复制'); return; }
+  const tsv = [data.headers.join('\t')].concat(
+    data.rows.map(function(row) { return row.map(function(c){ return String(c == null ? '' : c).replace(/\t/g,' ').replace(/\n/g,' '); }).join('\t'); })
+  ).join('\n');
+
+  function done(ok) { showToast(ok ? '✅ 已复制 ' + data.rows.length + ' 行，可直接粘贴' : '复制失败，请改用导出 CSV'); }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(tsv).then(function(){ done(true); }, function(){ fallback(); });
+  } else { fallback(); }
+
+  function fallback() {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = tsv;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      done(ok);
+    } catch (_) { done(false); }
+  }
+}
+
+function exportCSV() {
+  const data = currentRows();
+  if (!data) { alert('暂无数据可导出'); return; }
+
+  let csv = '\uFEFF';
+  csv += data.headers.join(',') + '\n';
+  data.rows.forEach(function(row) {
+    csv += row.map(function(cell) {
+      const s = String(cell == null ? '' : cell);
+      if (s.indexOf(',') >= 0 || s.indexOf('\n') >= 0 || s.indexOf('"') >= 0) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }).join(',') + '\n';
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+
+  const kw = $('keyword').value.trim();
+  const scope = currentScope();
+  let fname = 'CMD颜色BOM_' + safeName(lastQueryType || '查询');
+  if (kw) fname += '_' + safeName(kw);
+  if (scope !== SCOPE_ALL) fname += '_' + safeName(scope);
+  if (filterCat) fname += '_' + safeName(filterCat);
+  if (filterMat) fname += '_' + safeName(filterMat);
+  fname += '_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.download = fname;
+
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  alert('✅ CSV 已下载（' + data.rows.length + ' 行）！\n\n导入飞书多维表格：\n1. 飞书 → 多维表格 → 新建\n2. 右上角「...」→ 导入数据 → CSV\n3. 选择文件 → 确认');
+}
+
+/* ── 初始化 ── */
+document.getElementById('keyword').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); run(); }
+});
+(function initDropZone() {
+  const dz = $('dropZone');
+  const fi = $('fileInput');
+  dz.onclick = function() { fi.click(); };
+  fi.onchange = function() { if (fi.files && fi.files[0]) handleFile(fi.files[0]); };
+  dz.ondragover = function(e) { e.preventDefault(); dz.classList.add('dragover'); };
+  dz.ondragleave = function() { dz.classList.remove('dragover'); };
+  dz.ondrop = function(e) {
+    e.preventDefault();
+    dz.classList.remove('dragover');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  };
+})();
+
+loadImported();
+refreshImportUI();
+onTypeChange();
+onManualTypeChange();
+</script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+{
+  "id": "patent_risk_analysis_cloud",
+  "name": "竞对专利风险分析（全云版）",
+  "icon": "🔍",
+  "category": "DRE车玻璃",
+  "description": "Exa语义检索竞对专利(免费免key)+AI风险分级（0618格式），产出风险分析报告。全云版：前后端结合，panel表单+进度+报告渲染，全程云端完成无需hw-local。基于Exa语义检索摘要分析(云端无专利全文读取链路)。",
+  "inputs": [
+    {
+      "name": "competitorName",
+      "label": "竞对中文名",
+      "type": "text",
+      "required": true,
+      "placeholder": "如 麦格纳"
+    },
+    {
+      "name": "competitorNameEn",
+      "label": "竞对英文名",
+      "type": "text",
+      "required": false,
+      "placeholder": "如 Magna，用于全球专利检索"
+    },
+    {
+      "name": "techDirection",
+      "label": "技术方向",
+      "type": "text",
+      "required": true,
+      "placeholder": "如 DMS+EC镜片"
+    },
+    {
+      "name": "ourSolution",
+      "label": "我方方案（FTO对照）",
+      "type": "text",
+      "required": false,
+      "placeholder": "可选。用于逐特征对比分析侵权风险"
+    },
+    {
+      "name": "geography",
+      "label": "地理范围",
+      "type": "select",
+      "default": "中国",
+      "options": ["中国", "美国", "欧洲", "全球"]
+    },
+    {
+      "name": "aiModel",
+      "label": "AI分析模型",
+      "type": "select",
+      "default": "qwen2.5:14b",
+      "options": ["qwen2.5:14b", "qwen2.5:7b", "deepseek-v4-pro"]
+    }
+  ],
+  "outputs": [
+    { "name": "report", "label": "风险分析报告(Markdown)", "type": "text" },
+    { "name": "reportJson", "label": "结构化报告数据", "type": "json" },
+    { "name": "patentCount", "label": "检索到相关专利数", "type": "number" },
+    { "name": "riskSummary", "label": "风险概要", "type": "text" },
+    { "name": "channelStatus", "label": "数据渠道状态", "type": "text" }
+  ]
+}

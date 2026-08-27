@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCC/ECE 证书辅助校核</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif; background:#f9fafb; padding:20px; color:#1d1d1f; }
+h2 { font-size:18px; font-weight:700; margin-bottom:4px; }
+.subtitle { font-size:13px; color:#86868b; margin-bottom:16px; line-height:1.5; }
+
+.card { background:#fff; border:1px solid #e5e5e5; border-radius:12px; padding:20px; margin-bottom:16px; }
+
+/* 拖拽上传区 */
+.dropzone { border:2px dashed #c7ccd4; border-radius:12px; padding:32px 20px; text-align:center; cursor:pointer; transition:all .15s; background:#fafbfc; }
+.dropzone:hover { border-color:#007aff; background:#f4f8ff; }
+.dropzone.dragover { border-color:#007aff; background:#eaf2ff; }
+.dropzone .dz-icon { font-size:34px; margin-bottom:8px; }
+.dropzone .dz-main { font-size:14px; font-weight:600; color:#333; }
+.dropzone .dz-sub { font-size:12px; color:#86868b; margin-top:4px; }
+#fileInput { display:none; }
+
+/* 已选文件条 */
+.filechip { display:none; align-items:center; gap:10px; margin-top:12px; padding:10px 12px; background:#f0f6ff; border:1px solid #d0e2ff; border-radius:8px; font-size:13px; }
+.filechip.show { display:flex; }
+.filechip .fc-name { font-weight:600; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.filechip .fc-size { color:#86868b; flex-shrink:0; }
+.filechip .fc-remove { cursor:pointer; color:#86868b; font-size:16px; padding:0 4px; flex-shrink:0; }
+.filechip .fc-remove:hover { color:#ff3b30; }
+
+/* 路径模式（高级） */
+.advanced-toggle { font-size:12px; color:#007aff; cursor:pointer; margin-top:12px; display:inline-block; user-select:none; }
+.pathbox { display:none; margin-top:10px; }
+.pathbox.show { display:block; }
+.pathbox input { width:100%; padding:9px 12px; border:1px solid #e5e5e5; border-radius:8px; font-size:13px; outline:none; }
+.pathbox input:focus { border-color:#007aff; }
+.pathbox .pb-hint { font-size:12px; color:#86868b; margin-top:4px; }
+
+/* 模型选择（高级） */
+details.model-adv { margin-top:12px; }
+details.model-adv summary { font-size:12px; color:#007aff; cursor:pointer; user-select:none; }
+.model-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
+.model-grid label { font-size:12px; color:#86868b; display:block; margin-bottom:3px; }
+.model-grid select { width:100%; padding:8px 10px; border:1px solid #e5e5e5; border-radius:8px; font-size:13px; outline:none; background:#fff; }
+.model-grid select:focus { border-color:#007aff; }
+.model-hint { font-size:11px; color:#86868b; margin-top:6px; line-height:1.5; }
+
+/* 按钮 */
+.btn { padding:11px 28px; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; margin-top:16px; }
+.btn-primary { background:#007aff; color:#fff; width:100%; }
+.btn-primary:hover { background:#0063d1; }
+.btn-primary:disabled { background:#c7ccd4; cursor:not-allowed; }
+
+/* 运行状态 */
+.status { display:none; }
+.status.show { display:block; }
+.status-line { display:flex; align-items:center; gap:10px; font-size:14px; }
+.spinner { width:18px; height:18px; border:2.5px solid #d0e2ff; border-top-color:#007aff; border-radius:50%; animation:spin .8s linear infinite; flex-shrink:0; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.elapsed { color:#86868b; font-size:12px; margin-top:6px; padding-left:28px; }
+.phase-hint { color:#86868b; font-size:12px; margin-top:2px; padding-left:28px; }
+
+/* 错误 */
+.errorbox { display:none; background:#fff5f5; border:1px solid #ffd6d6; border-radius:10px; padding:14px 16px; }
+.errorbox.show { display:block; }
+.errorbox .eb-title { font-weight:700; color:#d70015; font-size:14px; margin-bottom:6px; }
+.errorbox pre { font-size:12px; color:#8a1f2d; white-space:pre-wrap; word-break:break-all; font-family:Consolas,monospace; line-height:1.5; }
+.errorbox .eb-hints { font-size:12px; color:#86868b; margin-top:8px; line-height:1.7; }
+
+/* 结果 */
+.verdict-banner { display:none; padding:12px 16px; border-radius:10px; font-size:15px; font-weight:700; margin-bottom:12px; }
+.verdict-banner.show { display:block; }
+.verdict-pass { background:#e8f7ee; color:#0a7d33; border:1px solid #b3e2c3; }
+.verdict-warn { background:#fff7e0; color:#9a6b00; border:1px solid #f0dba0; }
+.verdict-fail { background:#ffeaea; color:#d70015; border:1px solid #ffc4c4; }
+
+.report { font-size:13px; line-height:1.7; }
+.report h1 { font-size:17px; margin:14px 0 8px; }
+.report h3 { font-size:14.5px; margin:14px 0 6px; }
+.report blockquote { border-left:3px solid #d0e2ff; padding:2px 10px; color:#86868b; margin:6px 0; font-size:12px; }
+.report ul { padding-left:20px; margin:4px 0; }
+.report li { margin:2px 0; }
+.report table { border-collapse:collapse; width:100%; margin:8px 0; font-size:12.5px; }
+.report .table-wrap { overflow-x:auto; margin:8px 0; -webkit-overflow-scrolling:touch; }
+.report .table-wrap table { margin:0; }
+.report th, .report td { border:1px solid #e5e5e5; padding:6px 8px; text-align:left; }
+.report th { background:#f4f6f8; font-weight:600; }
+.report code { background:#f0f2f4; padding:1px 5px; border-radius:4px; font-size:12px; font-family:Consolas,monospace; }
+.report .todo-item { list-style:none; margin-left:-16px; }
+.report .todo-item input { margin-right:6px; }
+
+.result-actions { margin-top:12px; display:flex; gap:8px; }
+.btn-ghost { background:#fff; border:1px solid #d5d9de; color:#333; padding:7px 16px; font-size:13px; font-weight:600; border-radius:8px; cursor:pointer; margin-top:0; }
+.btn-ghost:hover { background:#f4f6f8; }
+
+details.raw { margin-top:10px; font-size:12px; color:#86868b; }
+details.raw pre { background:#f4f6f8; padding:10px; border-radius:8px; overflow-x:auto; margin-top:6px; font-family:Consolas,monospace; }
+
+.conn-note { font-size:12px; color:#86868b; margin-top:10px; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<h2>📋 CCC/ECE 证书辅助校核</h2>
+<p class="subtitle">上传证书 PDF，AI 视觉 + 云端文字提取双通道交叉验证，自动判定证书时效。全程云端完成，约 1–2 分钟。</p>
+
+<div class="card">
+  <div class="dropzone" id="dropzone">
+    <div class="dz-icon">📄</div>
+    <div class="dz-main">拖拽证书 PDF 到此处，或点击选择文件</div>
+    <div class="dz-sub">支持 CCC 自我声明 / CCC 证书附件 / ECE R43 型式批准 · ≤20MB</div>
+  </div>
+  <input type="file" id="fileInput" accept=".pdf,application/pdf">
+
+  <div class="filechip" id="filechip">
+    <span>📎</span>
+    <span class="fc-name" id="fcName"></span>
+    <span class="fc-size" id="fcSize"></span>
+    <span class="fc-remove" id="fcRemove" title="移除文件">✕</span>
+  </div>
+
+  <button class="btn btn-primary" id="runBtn" disabled>开始校核</button>
+  <div class="conn-note">⚠️ PDF 解析与 AI 识别全程在云端完成，无需本机环境（无需 hw-local / python）；预计 1–2 分钟。</div>
+
+  <details class="model-adv">
+    <summary>高级：AI 模型（出问题可在此切换）</summary>
+    <div class="model-grid">
+      <div>
+        <label for="visionModelSel">视觉模型（通道A）</label>
+        <select id="visionModelSel">
+          <option value="qwen2.5vl:7b">qwen2.5vl:7b</option>
+          <option value="qwen2.5:7b">acme-auto/qwen2.5:7b</option>
+        </select>
+      </div>
+      <div>
+        <label for="textModelSel">文本模型（通道B）</label>
+        <select id="textModelSel">
+          <option value="qwen2.5:14b">acme-auto/qwen2.5:14b</option>
+          <option value="qwen2.5:7b">acme-auto/qwen2.5:7b</option>
+        </select>
+      </div>
+    </div>
+    <div class="model-hint">默认：视觉 qwen2.5vl:7b + 文本 qwen2.5:14b。若某模型报 Unsupported，切到另一选项重试即可，无需重新打包。</div>
+  </details>
+</div>
+
+<div class="card status" id="statusCard">
+  <div class="status-line">
+    <div class="spinner"></div>
+    <span id="statusText">正在处理…</span>
+  </div>
+  <div class="elapsed" id="elapsed"></div>
+  <div class="phase-hint" id="phaseHint"></div>
+</div>
+
+<div class="errorbox" id="errorbox">
+  <div class="eb-title">❌ 校核失败</div>
+  <pre id="errorText"></pre>
+  <div class="eb-hints" id="errorHints"></div>
+</div>
+
+<div class="card" id="resultCard" style="display:none">
+  <div class="verdict-banner" id="verdictBanner"></div>
+  <div class="report" id="reportBox"></div>
+  <div class="result-actions">
+    <button class="btn-ghost" id="copyBtn">📋 复制报告</button>
+    <button class="btn-ghost" id="downloadBtn">⬇ 下载 .md</button>
+    <button class="btn-ghost" id="againBtn">🔄 校核另一份</button>
+  </div>
+  <details class="raw">
+    <summary>查看结构化结果 JSON（供下游绑定）</summary>
+    <pre id="rawJson"></pre>
+  </details>
+</div>
+
+<script>
+const TOOL_ID = (function() {
+  const m = location.pathname.match(/\/api\/tools\/([^/]+)\/panel/);
+  return m ? m[1] : 'ccc_ece_check_ui';
+})();
+const API_BASE = window.location.origin;
+const MAX_SIZE = 20 * 1024 * 1024;
+
+let selectedFile = null;      // File 对象
+let lastReport = '';          // 原始 markdown
+let lastOutputs = null;
+let timerId = null;
+
+const $ = (id) => document.getElementById(id);
+const dropzone = $('dropzone'), fileInput = $('fileInput'), filechip = $('filechip');
+const runBtn = $('runBtn'), statusCard = $('statusCard'), errorbox = $('errorbox');
+const resultCard = $('resultCard');
+
+// ── 文件选择 ──────────────────────────────────
+dropzone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => { if (fileInput.files.length) onFile(fileInput.files[0]); });
+
+['dragenter','dragover'].forEach(ev => dropzone.addEventListener(ev, (e) => {
+  e.preventDefault(); dropzone.classList.add('dragover');
+}));
+['dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, (e) => {
+  e.preventDefault(); dropzone.classList.remove('dragover');
+}));
+dropzone.addEventListener('drop', (e) => {
+  const files = e.dataTransfer.files;
+  if (files.length) onFile(files[0]);
+});
+
+$('fcRemove').addEventListener('click', (e) => {
+  e.stopPropagation();
+  clearFile();
+});
+
+function clearFile() {
+  selectedFile = null;
+  fileInput.value = '';
+  filechip.classList.remove('show');
+  updateRunBtn();
+}
+
+function onFile(file) {
+  const lower = file.name.toLowerCase();
+  if (!lower.endsWith('.pdf')) {
+    showError('请选择 PDF 文件', '选中的文件：' + file.name + '（' + (file.type || '未知类型') + '）', []);
+    return;
+  }
+  if (file.size > MAX_SIZE) {
+    showError('文件超过 20MB 限制', '文件大小：' + (file.size / 1024 / 1024).toFixed(1) + 'MB。请压缩或拆分后重试。', []);
+    return;
+  }
+  selectedFile = file;
+  $('fcName').textContent = file.name;
+  $('fcSize').textContent = (file.size / 1024).toFixed(0) + ' KB';
+  filechip.classList.add('show');
+  hideError();
+  updateRunBtn();
+}
+
+function updateRunBtn() {
+  runBtn.disabled = !selectedFile;
+}
+
+// ── 执行 ──────────────────────────────────────
+runBtn.addEventListener('click', run);
+
+async function run() {
+  hideError();
+  resultCard.style.display = 'none';
+
+  const inputs = {};
+  let modeLabel;
+
+  if (!selectedFile) return;
+  setRunning('正在读取文件…');
+  let b64;
+  try {
+    b64 = await fileToBase64(selectedFile);
+  } catch (e) {
+    stopRunning();
+    showError('读取文件失败', e.message, []);
+    return;
+  }
+  // 客户端魔数校验（%PDF-）
+  const head = atob(b64.slice(0, 8));
+  if (!head.startsWith('%PDF')) {
+    stopRunning();
+    showError('文件不是有效的 PDF', '文件头字节：' + JSON.stringify(head) + '。请确认为未加密的标准 PDF 文件。', []);
+    return;
+  }
+  inputs.pdfBase64 = b64;
+  inputs.pdfName = selectedFile.name;
+  inputs.visionModel = document.getElementById('visionModelSel').value;
+  inputs.textModel = document.getElementById('textModelSel').value;
+  modeLabel = '上传模式（' + (selectedFile.size / 1024).toFixed(0) + ' KB）';
+
+  setRunning('已提交：' + modeLabel + '，等待后端响应…');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 分钟兜底
+
+  try {
+    const resp = await fetch(API_BASE + '/api/tools/' + TOOL_ID + '/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inputs: inputs }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!resp.ok) {
+      let bodyText = '';
+      try { bodyText = (await resp.text()).slice(0, 500); } catch (_) {}
+      stopRunning();
+      showError('HTTP ' + resp.status + ' ' + resp.statusText,
+        bodyText || '(无响应体)', httpHints(resp.status));
+      return;
+    }
+
+    let data;
+    const text = await resp.text();
+    try { data = JSON.parse(text); }
+    catch (_) {
+      stopRunning();
+      showError('后端返回不是 JSON', text.slice(0, 500), []);
+      return;
+    }
+
+    // 兼容多种返回形态：{success,outputs} / {outputs} / run() 直接返回 {error}
+    const outputs = data.outputs || data;
+    if (data.success === false || data.error || outputs.error) {
+      stopRunning();
+      showError('校核未完成', String(data.error || outputs.error || '未知错误'), backendHints(String(data.error || outputs.error || '')));
+      return;
+    }
+
+    stopRunning();
+    showResult(outputs);
+
+    // 上报输出供工作流下游绑定
+    try {
+      parent.postMessage({ type: 'tool-output', outputs: outputs }, '*');
+    } catch (_) {}
+  } catch (e) {
+    clearTimeout(timeoutId);
+    stopRunning();
+    if (e.name === 'AbortError') {
+      showError('请求超时（5 分钟）', '后端未在 5 分钟内返回。云端 PDF 解析或 AI 调用可能卡住。',
+        ['稍后重试', '若持续超时，反馈平台管理员查看 server 日志']);
+    } else {
+      showError('请求失败：' + e.message, '', ['确认平台服务可访问', '若为跨域/网络错误，联系平台管理员查看 server 日志']);
+    }
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const idx = dataUrl.indexOf(',');
+      resolve(idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl);
+    };
+    reader.onerror = () => reject(new Error('FileReader 错误：' + (reader.error && reader.error.message || '未知')));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── 状态 UI ───────────────────────────────────
+function setRunning(firstHint) {
+  if (timerId) { clearInterval(timerId); timerId = null; }   // v5.2 防双计时：run() 内 setRunning 调两次，旧区间不清会泄漏
+  runBtn.disabled = true;
+  runBtn.textContent = '校核中…';
+  statusCard.classList.add('show');
+  $('statusText').textContent = firstHint || '正在处理…';
+  const start = Date.now();
+  const hints = [
+    [0, '正在上传 PDF 到云端…'],
+    [6, '文本通道：云端提取文本 + AI 识别…'],
+    [30, '视觉通道：PDF 转图 + AI 视觉识别（较慢，请耐心等待）…'],
+    [70, '交叉验证与报告生成中…'],
+    [120, '耗时超出平常，继续等待或稍后重试（云端 AI 可能限流）…'],
+  ];
+  timerId = setInterval(() => {
+    const sec = Math.floor((Date.now() - start) / 1000);
+    $('elapsed').textContent = '已用时 ' + sec + ' 秒';
+    let hint = hints[0][1];
+    for (const [t, h] of hints) { if (sec >= t) hint = h; }
+    $('phaseHint').textContent = hint;
+  }, 1000);
+}
+
+function stopRunning() {
+  if (timerId) { clearInterval(timerId); timerId = null; }
+  statusCard.classList.remove('show');
+  $('elapsed').textContent = '';
+  $('phaseHint').textContent = '';
+  runBtn.textContent = '开始校核';
+  updateRunBtn();
+}
+
+function showError(title, detail, hints) {
+  errorbox.classList.add('show');
+  $('errorText').textContent = title + (detail ? '\n' + detail : '');
+  $('errorHints').innerHTML = (hints && hints.length)
+    ? '排查建议：<br>• ' + hints.map(h => escapeHtml(h)).join('<br>• ')
+    : '';
+  errorbox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function hideError() { errorbox.classList.remove('show'); }
+
+function httpHints(status) {
+  if (status === 413) return ['请求体过大：PDF 的 base64 超过平台 body 上限。请压缩 PDF 后重试，或反馈平台管理员调大 /api/tools/*/run 的 body 限制'];
+  if (status === 404) return ['接口不存在：工具可能未注册成功（检查工具库中本工具的 hasBackend 是否为 true）'];
+  if (status === 500 || status === 502) return ['平台后端错误：查看 server 日志；若提示"没有后端逻辑"，说明 index.js 未被平台识别'];
+  return [];
+}
+
+function backendHints(msg) {
+  const hints = [];
+  if (/没有后端逻辑/.test(msg)) hints.push('工具后端未注册成功：在工具库删除本工具后重新上传 ZIP');
+  if (/超时/.test(msg)) hints.push('AI 调用耗时过长，可稍后重试');
+  if (/双通道均失败/.test(msg)) hints.push('把错误中的通道诊断原文反馈工具开发者');
+  return hints;
+}
+
+// ── 结果渲染 ──────────────────────────────────
+function showResult(outputs) {
+  lastOutputs = outputs;
+  lastReport = outputs.report || '';
+  resultCard.style.display = 'block';
+
+  // 综合判定横幅
+  const banner = $('verdictBanner');
+  const m = lastReport.match(/综合判定\*\*：(\S+)\s*\*\*(.+?)\*\*/);
+  if (m) {
+    const icon = m[1], label = m[2];
+    banner.textContent = icon + ' 综合判定：' + label;
+    banner.className = 'verdict-banner show ' +
+      (/✅/.test(icon) ? 'verdict-pass' : /⚠️/.test(icon) ? 'verdict-warn' : 'verdict-fail');
+  } else {
+    banner.className = 'verdict-banner';
+  }
+
+  $('reportBox').innerHTML = mdToHtml(lastReport);
+  $('rawJson').textContent = JSON.stringify(outputs.result || outputs, null, 2);
+  resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+$('copyBtn').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(lastReport);
+    $('copyBtn').textContent = '✅ 已复制';
+    setTimeout(() => { $('copyBtn').textContent = '📋 复制报告'; }, 1500);
+  } catch (_) {
+    // 降级：选中复制
+    const ta = document.createElement('textarea');
+    ta.value = lastReport; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    $('copyBtn').textContent = '✅ 已复制';
+    setTimeout(() => { $('copyBtn').textContent = '📋 复制报告'; }, 1500);
+  }
+});
+
+$('downloadBtn').addEventListener('click', () => {
+  const name = (lastOutputs && lastOutputs.result && lastOutputs.result.fileName) || '证书';
+  const blob = new Blob([lastReport], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '校核报告_' + name.replace(/[\\/:*?"<>|]/g, '_') + '.md';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+$('againBtn').addEventListener('click', () => {
+  resultCard.style.display = 'none';
+  clearFile();
+  dropzone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
+// ── 迷你 Markdown 渲染（自包含，无外部依赖）────
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function mdInline(s) {
+  return s
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
+
+function mdToHtml(md) {
+  const lines = escapeHtml(md).split('\n');
+  const out = [];
+  let i = 0;
+  let listOpen = false;
+
+  const closeList = () => { if (listOpen) { out.push('</ul>'); listOpen = false; } };
+
+  const renderTable = (rows) => {
+    const cells = (r) => r.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map(c => c.trim());
+    let html = '<table>';
+    rows.forEach((r, idx) => {
+      if (/^\|?\s*:?-{2,}/.test(r) && cells(r).every(c => /^:?-{2,}:?$/.test(c))) return; // 分隔行
+      const tag = idx === 0 ? 'th' : 'td';
+      html += '<tr>' + cells(r).map(c => '<' + tag + '>' + mdInline(c) + '</' + tag + '>').join('') + '</tr>';
+    });
+    return '<div class="table-wrap">' + html + '</table></div>';
+  };
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // 表格块
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      closeList();
+      const rows = [];
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) { rows.push(lines[i].trim()); i++; }
+      out.push(renderTable(rows));
+      continue;
+    }
+
+    // 标题
+    const h = line.match(/^(#{1,4})\s+(.*)$/);
+    if (h) {
+      closeList();
+      const lvl = Math.min(h[1].length + 1, 4);   // # → h2 视觉层级，避免过大
+      out.push('<h' + lvl + '>' + mdInline(h[2]) + '</h' + lvl + '>');
+      i++; continue;
+    }
+
+    // 引用
+    if (/^&gt;\s?/.test(line)) {
+      closeList();
+      out.push('<blockquote>' + mdInline(line.replace(/^&gt;\s?/, '')) + '</blockquote>');
+      i++; continue;
+    }
+
+    // 待办清单
+    const todo = line.match(/^-\s+\[( |x)\]\s+(.*)$/i);
+    if (todo) {
+      if (!listOpen) { out.push('<ul>'); listOpen = true; }
+      out.push('<li class="todo-item"><input type="checkbox" disabled' + (/x/i.test(todo[1]) ? ' checked' : '') + '>' + mdInline(todo[2]) + '</li>');
+      i++; continue;
+    }
+
+    // 普通列表
+    const li = line.match(/^-\s+(.*)$/);
+    if (li) {
+      if (!listOpen) { out.push('<ul>'); listOpen = true; }
+      out.push('<li>' + mdInline(li[1]) + '</li>');
+      i++; continue;
+    }
+
+    // 空行
+    if (/^\s*$/.test(line)) { closeList(); i++; continue; }
+
+    // 段落
+    closeList();
+    out.push('<p>' + mdInline(line) + '</p>');
+    i++;
+  }
+  closeList();
+  return out.join('\n');
+}
+</script>
+</body>
+</html>

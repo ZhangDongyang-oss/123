@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>竞对专利风险分析</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif; background:#f9fafb; padding:20px; color:#1d1d1f; }
+h2 { font-size:18px; font-weight:700; margin-bottom:4px; }
+.subtitle { font-size:13px; color:#86868b; margin-bottom:16px; line-height:1.5; }
+
+.card { background:#fff; border:1px solid #e5e5e5; border-radius:12px; padding:20px; margin-bottom:16px; }
+
+/* 表单 */
+.form-row { margin-bottom:14px; }
+.form-row label { display:block; font-size:13px; font-weight:600; color:#333; margin-bottom:5px; }
+.form-row label .opt { font-weight:400; color:#86868b; font-size:12px; }
+.form-row input, .form-row select, .form-row textarea {
+  width:100%; padding:9px 12px; border:1px solid #e5e5e5; border-radius:8px; font-size:13px; outline:none; font-family:inherit;
+}
+.form-row input:focus, .form-row select:focus, .form-row textarea:focus { border-color:#007aff; }
+.form-row textarea { resize:vertical; min-height:64px; }
+.form-row .hint { font-size:12px; color:#86868b; margin-top:4px; }
+.form-two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:560px){ .form-two { grid-template-columns:1fr; } }
+
+/* 按钮 */
+.btn { padding:11px 28px; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; margin-top:8px; }
+.btn-primary { background:#007aff; color:#fff; width:100%; }
+.btn-primary:hover { background:#0063d1; }
+.btn-primary:disabled { background:#c7ccd4; cursor:not-allowed; }
+
+/* 模型选择（高级，默认折叠）*/
+details.model-adv { margin-top:12px; }
+details.model-adv summary { font-size:12px; color:#007aff; cursor:pointer; user-select:none; }
+.model-hint { font-size:11px; color:#86868b; margin-top:6px; line-height:1.5; }
+
+/* 运行状态 */
+.status { display:none; }
+.status.show { display:block; }
+.status-line { display:flex; align-items:center; gap:10px; font-size:14px; }
+.spinner { width:18px; height:18px; border:2.5px solid #d0e2ff; border-top-color:#007aff; border-radius:50%; animation:spin .8s linear infinite; flex-shrink:0; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.elapsed { color:#86868b; font-size:12px; margin-top:6px; padding-left:28px; }
+.phase-hint { color:#86868b; font-size:12px; margin-top:2px; padding-left:28px; }
+
+/* 错误 */
+.errorbox { display:none; background:#fff5f5; border:1px solid #ffd6d6; border-radius:10px; padding:14px 16px; }
+.errorbox.show { display:block; }
+.errorbox .eb-title { font-weight:700; color:#d70015; font-size:14px; margin-bottom:6px; }
+.errorbox pre { font-size:12px; color:#8a1f2d; white-space:pre-wrap; word-break:break-all; font-family:Consolas,monospace; line-height:1.5; }
+.errorbox .eb-hints { font-size:12px; color:#86868b; margin-top:8px; line-height:1.7; }
+
+/* 结果 */
+.verdict-banner { display:none; padding:12px 16px; border-radius:10px; font-size:15px; font-weight:700; margin-bottom:12px; }
+.verdict-banner.show { display:block; }
+.verdict-warn { background:#fff7e0; color:#9a6b00; border:1px solid #f0dba0; }
+.verdict-fail { background:#ffeaea; color:#d70015; border:1px solid #ffc4c4; }
+.verdict-info { background:#eaf2ff; color:#0a4d99; border:1px solid #c7dcff; }
+
+.meta-row { font-size:12px; color:#86868b; margin-bottom:10px; }
+.meta-row span { margin-right:14px; }
+
+.report { font-size:13px; line-height:1.7; }
+.report h1 { font-size:17px; margin:14px 0 8px; }
+.report h2 { font-size:15px; margin:14px 0 6px; }
+.report h3 { font-size:14.5px; margin:14px 0 6px; }
+.report blockquote { border-left:3px solid #d0e2ff; padding:2px 10px; color:#86868b; margin:6px 0; font-size:12px; }
+.report ul, .report ol { padding-left:20px; margin:4px 0; }
+.report li { margin:2px 0; }
+.report table { border-collapse:collapse; width:100%; margin:8px 0; font-size:12.5px; }
+.report .table-wrap { overflow-x:auto; margin:8px 0; -webkit-overflow-scrolling:touch; }
+.report .table-wrap table { margin:0; }
+.report th, .report td { border:1px solid #e5e5e5; padding:6px 8px; text-align:left; }
+.report th { background:#f4f6f8; font-weight:600; }
+.report code { background:#f0f2f4; padding:1px 5px; border-radius:4px; font-size:12px; font-family:Consolas,monospace; }
+
+.result-actions { margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+.btn-ghost { background:#fff; border:1px solid #d5d9de; color:#333; padding:7px 16px; font-size:13px; font-weight:600; border-radius:8px; cursor:pointer; margin-top:0; }
+.btn-ghost:hover { background:#f4f6f8; }
+
+details.raw { margin-top:10px; font-size:12px; color:#86868b; }
+details.raw pre { background:#f4f6f8; padding:10px; border-radius:8px; overflow-x:auto; margin-top:6px; font-family:Consolas,monospace; }
+
+.conn-note { font-size:12px; color:#86868b; margin-top:10px; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<h2>🔍 竞对专利风险分析</h2>
+<p class="subtitle">Exa 语义检索竞对专利（免费免 key）+ AI 风险分级，产出 0618 格式报告。全程云端，约 1–2 分钟。</p>
+
+<div class="card">
+  <div class="form-row">
+    <label>竞对中文名 <span class="opt">*必填</span></label>
+    <input type="text" id="competitorName" placeholder="如 麦格纳">
+  </div>
+  <div class="form-two">
+    <div class="form-row">
+      <label>竞对英文名 <span class="opt">选填，用于全球检索</span></label>
+      <input type="text" id="competitorNameEn" placeholder="如 Magna">
+    </div>
+    <div class="form-row">
+      <label>技术方向 <span class="opt">*必填</span></label>
+      <input type="text" id="techDirection" placeholder="如 DMS+EC镜片">
+    </div>
+  </div>
+  <div class="form-row">
+    <label>我方方案（FTO 对照） <span class="opt">选填，填了才做逐特征侵权比对</span></label>
+    <textarea id="ourSolution" placeholder="如 在汽车内后视镜中集成驾驶员监测摄像头与近红外LED，通过EC镜片实现防眩目+DMS光路"></textarea>
+  </div>
+  <div class="form-row">
+    <label>地理范围</label>
+    <select id="geography">
+      <option value="中国" selected>中国</option>
+      <option value="美国">美国</option>
+      <option value="欧洲">欧洲</option>
+      <option value="全球">全球</option>
+    </select>
+  </div>
+
+  <details class="model-adv">
+    <summary>高级：AI 模型（出问题可在此切换）</summary>
+    <div class="form-row" style="margin-top:8px">
+      <label>AI 分析模型</label>
+      <select id="aiModel">
+        <option value="qwen2.5:14b" selected>acme-auto/qwen2.5:14b</option>
+        <option value="qwen2.5:7b">acme-auto/qwen2.5:7b（已验证可用）</option>
+        <option value="deepseek-v4-pro">deepseek-v4-pro（长文，不支持图）</option>
+      </select>
+      <div class="model-hint">默认 qwen2.5:14b。若 AI 分析报「Unsupported」等错误，切到 acme-auto/qwen2.5:7b 重试即可，无需重新打包。</div>
+    </div>
+  </details>
+
+  <button class="btn btn-primary" id="runBtn">开始分析</button>
+  <div class="conn-note">⚠️ 全程云端完成，无需本机环境，约 1–2 分钟。</div>
+</div>
+
+<div class="card status" id="statusCard">
+  <div class="status-line">
+    <div class="spinner"></div>
+    <span id="statusText">正在处理…</span>
+  </div>
+  <div class="elapsed" id="elapsed"></div>
+  <div class="phase-hint" id="phaseHint"></div>
+</div>
+
+<div class="errorbox" id="errorbox">
+  <div class="eb-title">❌ 分析失败</div>
+  <pre id="errorText"></pre>
+  <div class="eb-hints" id="errorHints"></div>
+</div>
+
+<div class="card" id="resultCard" style="display:none">
+  <div class="verdict-banner" id="verdictBanner"></div>
+  <div class="meta-row" id="metaRow"></div>
+  <div class="report" id="reportBox"></div>
+  <div class="result-actions">
+    <button class="btn-ghost" id="copyBtn">📋 复制报告</button>
+    <button class="btn-ghost" id="downloadBtn">⬇ 下载 .md</button>
+    <button class="btn-ghost" id="againBtn">🔄 重新分析</button>
+  </div>
+  <details class="raw">
+    <summary>查看结构化结果 JSON（供下游绑定）</summary>
+    <pre id="rawJson"></pre>
+  </details>
+</div>
+
+<script>
+// 坑#1 铁律：工具 id 永不硬编码，从面板服务 URL 动态解析
+const TOOL_ID = (function() {
+  const m = location.pathname.match(/\/api\/tools\/([^/]+)\/panel/);
+  return m ? m[1] : 'patent_risk_analysis_cloud';
+})();
+const API_BASE = window.location.origin;
+
+let lastReport = '';
+let lastOutputs = null;
+let timerId = null;
+
+const $ = (id) => document.getElementById(id);
+const runBtn = $('runBtn'), statusCard = $('statusCard'), errorbox = $('errorbox');
+const resultCard = $('resultCard');
+
+// ── 执行 ──────────────────────────────────────
+runBtn.addEventListener('click', run);
+
+// Enter 提交：单行输入框 Enter 触发；我方方案 textarea 用 Ctrl/Cmd+Enter
+['competitorName', 'competitorNameEn', 'techDirection'].forEach(id => {
+  $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); run(); } });
+});
+$('ourSolution').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); run(); }
+});
+
+async function run() {
+  hideError();
+  resultCard.style.display = 'none';
+
+  const competitorName = $('competitorName').value.trim();
+  const competitorNameEn = $('competitorNameEn').value.trim();
+  const techDirection = $('techDirection').value.trim();
+  const ourSolution = $('ourSolution').value.trim();
+  const geography = $('geography').value;
+  const aiModel = $('aiModel').value;
+
+  if (!competitorName) { showError('请填写竞对中文名', '', []); $('competitorName').focus(); return; }
+  if (!techDirection) { showError('请填写技术方向', '', []); $('techDirection').focus(); return; }
+
+  const inputs = { competitorName, competitorNameEn, techDirection, ourSolution, geography, aiModel };
+
+  setRunning('已提交检索请求，等待后端响应…');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 分钟兜底
+
+  try {
+    const resp = await fetch(API_BASE + '/api/tools/' + TOOL_ID + '/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inputs: inputs }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!resp.ok) {
+      let bodyText = '';
+      try { bodyText = (await resp.text()).slice(0, 500); } catch (_) {}
+      stopRunning();
+      showError('HTTP ' + resp.status + ' ' + resp.statusText, bodyText || '(无响应体)', httpHints(resp.status));
+      return;
+    }
+
+    let data;
+    const text = await resp.text();
+    try { data = JSON.parse(text); }
+    catch (_) {
+      stopRunning();
+      showError('后端返回不是 JSON', text.slice(0, 500), []);
+      return;
+    }
+
+    // 兼容多种返回形态：{success,outputs} / {outputs} / run() 直接返回 {error}
+    const outputs = data.outputs || data;
+    if (data.success === false || data.error || outputs.error) {
+      stopRunning();
+      showError('分析未完成', String(data.error || outputs.error || '未知错误'), backendHints(String(data.error || outputs.error || '')));
+      return;
+    }
+
+    stopRunning();
+    showResult(outputs);
+
+    // 上报输出供工作流下游绑定
+    try { parent.postMessage({ type: 'tool-output', outputs: outputs }, '*'); } catch (_) {}
+  } catch (e) {
+    clearTimeout(timeoutId);
+    stopRunning();
+    if (e.name === 'AbortError') {
+      showError('请求超时（5 分钟）', '后端未在 5 分钟内返回。多轮 Exa 检索 + AI 风险分级耗时较长，可能仍在跑或卡住。',
+        ['稍后重试', '简化技术方向关键词以减少检索范围']);
+    } else {
+      showError('请求失败：' + e.message, '', ['确认平台服务可访问', '若为网络错误，联系平台管理员查看 server 日志']);
+    }
+  }
+}
+
+// ── 状态 UI ───────────────────────────────────
+function setRunning(firstHint) {
+  if (timerId) { clearInterval(timerId); timerId = null; }   // 防双计时泄漏
+  runBtn.disabled = true;
+  runBtn.textContent = '分析中…';
+  statusCard.classList.add('show');
+  $('statusText').textContent = firstHint || '正在处理…';
+  const start = Date.now();
+  const hints = [
+    [0,   'Exa 语义检索中（中英文多轮 + 补搜）…'],
+    [20,  '整理专利摘要 + 法律状态识别…'],
+    [35,  'AI 风险分级分析中（按技术方向聚类）…'],
+    [75,  'FTO 逐特征对照分析（如填了我方方案）…'],
+    [110, '报告生成中…'],
+    [160, '耗时超出平常，继续等待或稍后重试（云端 AI 可能限流）…'],
+  ];
+  timerId = setInterval(() => {
+    const sec = Math.floor((Date.now() - start) / 1000);
+    $('elapsed').textContent = '已用时 ' + sec + ' 秒';
+    let hint = hints[0][1];
+    for (const [t, h] of hints) { if (sec >= t) hint = h; }
+    $('phaseHint').textContent = hint;
+  }, 1000);
+}
+
+function stopRunning() {
+  if (timerId) { clearInterval(timerId); timerId = null; }
+  statusCard.classList.remove('show');
+  $('elapsed').textContent = '';
+  $('phaseHint').textContent = '';
+  runBtn.textContent = '开始分析';
+  runBtn.disabled = false;
+}
+
+function showError(title, detail, hints) {
+  errorbox.classList.add('show');
+  $('errorText').textContent = title + (detail ? '\n' + detail : '');
+  $('errorHints').innerHTML = (hints && hints.length)
+    ? '排查建议：<br>• ' + hints.map(h => escapeHtml(h)).join('<br>• ')
+    : '';
+  errorbox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function hideError() { errorbox.classList.remove('show'); }
+
+function httpHints(status) {
+  if (status === 404) return ['接口不存在：工具可能未注册成功（坑#1：panel id 不匹配）。检查工具库中本工具的 hasBackend 是否为 true'];
+  if (status === 500 || status === 502) return ['平台后端错误：查看 server 日志；若提示"没有后端逻辑"，说明 index.js 未被平台识别——删除工具后重新上传 ZIP'];
+  return [];
+}
+
+function backendHints(msg) {
+  const hints = [];
+  if (/没有后端逻辑/.test(msg)) hints.push('工具后端未注册成功：在工具库删除本工具后重新上传 ZIP');
+  if (/超时/.test(msg)) hints.push('多轮检索或 AI 调用耗时过长，可稍后重试，或简化技术方向关键词');
+  if (/Unsupported|不支持|模型/.test(msg)) hints.push('AI 模型可能不支持：将表单中「AI 分析模型」切为 acme-auto/qwen2.5:7b 后重试');
+  if (/Exa MCP|出公网|ENOTFOUND|ETIMEDOUT/.test(msg)) hints.push('云环境可能无法出公网到 mcp.exa.ai——需平台侧开通出网，先用 probe_patent_egress 探针确认');
+  return hints;
+}
+
+// ── 结果渲染 ──────────────────────────────────
+function showResult(outputs) {
+  lastOutputs = outputs;
+  lastReport = outputs.report || '';
+  resultCard.style.display = 'block';
+
+  // 横幅：按 riskSummary / channelStatus 判定等级
+  const banner = $('verdictBanner');
+  const rs = outputs.riskSummary || '';
+  const cs = outputs.channelStatus || '';
+  const backup = outputs.reportJson && outputs.reportJson.backupTriggered;
+  const aiFailed = /AI 分析失败|Unsupported/.test(cs);
+
+  if (backup) {
+    banner.textContent = '⚠️ 数据不足，需智慧芽补查';
+    banner.className = 'verdict-banner show verdict-warn';
+  } else if (aiFailed) {
+    banner.textContent = '⚠️ 检索完成但 AI 分析失败——建议切换模型重试';
+    banner.className = 'verdict-banner show verdict-warn';
+  } else if (outputs.patentCount > 0) {
+    banner.textContent = '✅ 共检索到 ' + outputs.patentCount + ' 件相关专利，报告已生成';
+    banner.className = 'verdict-banner show verdict-info';
+  } else {
+    banner.textContent = '⚠️ 未检索到相关专利';
+    banner.className = 'verdict-banner show verdict-warn';
+  }
+
+  // 元信息行
+  const meta = [];
+  if (outputs.patentCount != null) meta.push('<span>📊 专利数：' + outputs.patentCount + '</span>');
+  if (outputs.reportJson && outputs.reportJson.aiModel) meta.push('<span>🤖 模型：' + escapeHtml(outputs.reportJson.aiModel) + '</span>');
+  if (outputs.reportJson && outputs.reportJson.searchRounds != null) meta.push('<span>🔁 检索轮数：' + outputs.reportJson.searchRounds + '</span>');
+  if (cs) meta.push('<span>📡 渠道：' + escapeHtml(cs) + '</span>');
+  $('metaRow').innerHTML = meta.join('');
+
+  $('reportBox').innerHTML = mdToHtml(lastReport);
+  $('rawJson').textContent = JSON.stringify(outputs.reportJson || outputs, null, 2);
+  resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+$('copyBtn').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(lastReport);
+    $('copyBtn').textContent = '✅ 已复制';
+    setTimeout(() => { $('copyBtn').textContent = '📋 复制报告'; }, 1500);
+  } catch (_) {
+    const ta = document.createElement('textarea');
+    ta.value = lastReport; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    $('copyBtn').textContent = '✅ 已复制';
+    setTimeout(() => { $('copyBtn').textContent = '📋 复制报告'; }, 1500);
+  }
+});
+
+$('downloadBtn').addEventListener('click', () => {
+  const name = (lastOutputs && lastOutputs.reportJson && lastOutputs.reportJson.competitorName) || '专利风险分析';
+  const dir = (lastOutputs && lastOutputs.reportJson && lastOutputs.reportJson.techDirection) || '';
+  const blob = new Blob([lastReport], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name + (dir ? '_' + dir : '') + '_专利风险分析.md';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+$('againBtn').addEventListener('click', () => {
+  resultCard.style.display = 'none';
+  document.querySelector('.card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
+// ── 迷你 Markdown 渲染（自包含，无外部依赖）────
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function mdInline(s) {
+  return s
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
+
+function mdToHtml(md) {
+  const lines = escapeHtml(md).split('\n');
+  const out = [];
+  let i = 0;
+  let listOpen = false, olOpen = false;
+
+  const closeList = () => { if (listOpen) { out.push('</ul>'); listOpen = false; } if (olOpen) { out.push('</ol>'); olOpen = false; } };
+
+  const renderTable = (rows) => {
+    const cells = (r) => r.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map(c => c.trim());
+    let html = '<table>';
+    rows.forEach((r, idx) => {
+      if (/^\|?\s*:?-{2,}/.test(r) && cells(r).every(c => /^:?-{2,}:?$/.test(c))) return;
+      const tag = idx === 0 ? 'th' : 'td';
+      html += '<tr>' + cells(r).map(c => '<' + tag + '>' + mdInline(c) + '</' + tag + '>').join('') + '</tr>';
+    });
+    return '<div class="table-wrap">' + html + '</table></div>';
+  };
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // 表格块
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      closeList();
+      const rows = [];
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) { rows.push(lines[i].trim()); i++; }
+      out.push(renderTable(rows));
+      continue;
+    }
+
+    // 标题
+    const h = line.match(/^(#{1,4})\s+(.*)$/);
+    if (h) {
+      closeList();
+      const lvl = Math.min(h[1].length + 1, 4);
+      out.push('<h' + lvl + '>' + mdInline(h[2]) + '</h' + lvl + '>');
+      i++; continue;
+    }
+
+    // 引用
+    if (/^&gt;\s?/.test(line)) {
+      closeList();
+      out.push('<blockquote>' + mdInline(line.replace(/^&gt;\s?/, '')) + '</blockquote>');
+      i++; continue;
+    }
+
+    // 有序列表
+    const ol = line.match(/^\d+\.\s+(.*)$/);
+    if (ol) {
+      if (!olOpen) { closeList(); out.push('<ol>'); olOpen = true; }
+      out.push('<li>' + mdInline(ol[1]) + '</li>');
+      i++; continue;
+    }
+
+    // 普通列表
+    const li = line.match(/^-\s+(.*)$/);
+    if (li) {
+      if (!listOpen) { closeList(); out.push('<ul>'); listOpen = true; }
+      out.push('<li>' + mdInline(li[1]) + '</li>');
+      i++; continue;
+    }
+
+    // 空行
+    if (/^\s*$/.test(line)) { closeList(); i++; continue; }
+
+    // 段落
+    closeList();
+    out.push('<p>' + mdInline(line) + '</p>');
+    i++;
+  }
+  closeList();
+  return out.join('\n');
+}
+</script>
+</body>
+</html>

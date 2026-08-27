@@ -1,0 +1,40 @@
+{
+  "id": "ccc_ece_check_cloud",
+  "name": "CCC/ECE 证书辅助校核（纯云端）",
+  "icon": "📋",
+  "category": "合规校核",
+  "description": "上传证书 PDF，云端 pdfjs 解析 + AI 视觉/文本双通道交叉验证 + 时效判定。全程云端完成，无需本地环境（无需 hw-local / python）。",
+  "inputs": [
+    {
+      "name": "pdfBase64",
+      "label": "PDF Base64（面板上传自动填充）",
+      "type": "text",
+      "required": true
+    },
+    {
+      "name": "pdfName",
+      "label": "PDF 文件名（可选）",
+      "type": "text",
+      "required": false
+    },
+    {
+      "name": "visionModel",
+      "label": "视觉模型",
+      "type": "select",
+      "required": false,
+      "options": ["qwen2.5vl:7b", "qwen2.5:7b"]
+    },
+    {
+      "name": "textModel",
+      "label": "文本模型",
+      "type": "select",
+      "required": false,
+      "default": "qwen2.5:14b",
+      "options": ["qwen2.5:14b", "qwen2.5:7b"]
+    }
+  ],
+  "outputs": [
+    { "name": "result", "label": "校核结论(JSON)", "type": "json" },
+    { "name": "report", "label": "校核报告(Markdown)", "type": "text" }
+  ]
+}

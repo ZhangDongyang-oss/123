@@ -1,0 +1,51 @@
+{
+  "id": "cmd_color_bom",
+  "name": "CMD产品颜色BOM查询",
+  "icon": "🎨",
+  "category": "BOM管理",
+  "description": "车型C LUX 颜色配置+纹理代码查询，支持导出CSV导入飞书多维表格。",
+  "inputs": [
+    {
+      "name": "queryType",
+      "label": "查询类型",
+      "type": "select",
+      "required": true,
+      "options": [
+        "全部颜色",
+        "按颜色分类",
+        "按颜色名称",
+        "按颜色编码",
+        "全部纹理",
+        "按纹理分类",
+        "按纹理代码",
+        "全量汇总",
+        "交叉查询"
+      ],
+      "default": "全部颜色"
+    },
+    {
+      "name": "keyword",
+      "label": "查询关键词",
+      "type": "text",
+      "required": false,
+      "placeholder": "如：黑色系、高亮黑、注塑纹理"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "result",
+      "label": "查询结果",
+      "type": "table"
+    },
+    {
+      "name": "summary",
+      "label": "统计数据",
+      "type": "json"
+    },
+    {
+      "name": "recordCount",
+      "label": "记录数",
+      "type": "number"
+    }
+  ]
+}
